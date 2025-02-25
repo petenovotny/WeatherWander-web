@@ -7,64 +7,61 @@ import type { Location } from "@shared/schema";
 
 export default function Home() {
   const [userLocation, setUserLocation] = useState<Location | null>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(false);
   const { toast } = useToast();
 
   const requestLocation = () => {
-    setIsLoading(true);
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          setUserLocation({
-            lat: position.coords.latitude,
-            lng: position.coords.longitude
-          });
-          setIsLoading(false);
-        },
-        (error) => {
-          setIsLoading(false);
-          let errorMessage = "Could not get your location. ";
-          switch (error.code) {
-            case error.PERMISSION_DENIED:
-              errorMessage += "Please enable location services in your browser settings.";
-              break;
-            case error.POSITION_UNAVAILABLE:
-              errorMessage += "Location information is unavailable.";
-              break;
-            case error.TIMEOUT:
-              errorMessage += "Request timed out. Please try again.";
-              break;
-            default:
-              errorMessage += "An unknown error occurred.";
-          }
-          toast({
-            title: "Location Error",
-            description: errorMessage,
-            variant: "destructive"
-          });
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 5000,
-          maximumAge: 0
-        }
-      );
-    } else {
-      setIsLoading(false);
+    if (!("geolocation" in navigator)) {
       toast({
         title: "Browser Error",
         description: "Geolocation is not supported by your browser",
         variant: "destructive"
       });
+      return;
     }
+
+    setIsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        setUserLocation({
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
+        setIsLoading(false);
+      },
+      (error) => {
+        setIsLoading(false);
+        let errorMessage = "Could not get your location. ";
+        switch (error.code) {
+          case error.PERMISSION_DENIED:
+            errorMessage += "Please enable location services in your browser settings.";
+            break;
+          case error.POSITION_UNAVAILABLE:
+            errorMessage += "Location information is unavailable.";
+            break;
+          case error.TIMEOUT:
+            errorMessage += "Request timed out. Please try again.";
+            break;
+          default:
+            errorMessage += "An unknown error occurred.";
+        }
+        toast({
+          title: "Location Error",
+          description: errorMessage,
+          variant: "destructive"
+        });
+      },
+      {
+        enableHighAccuracy: true,
+        timeout: 5000,
+        maximumAge: 0
+      }
+    );
   };
 
-  // Request location when component mounts
   useEffect(() => {
-    const timeoutId = setTimeout(() => {
-      requestLocation();
-    }, 1000); // Small delay to ensure UI is ready
-
+    // Request location after a small delay to ensure everything is loaded
+    const timeoutId = setTimeout(requestLocation, 1000);
     return () => clearTimeout(timeoutId);
   }, []);
 
@@ -72,7 +69,7 @@ export default function Home() {
     return (
       <div className="h-screen w-full flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-semibold mb-2">Configuration Required</h2>
+          <h2 className="text-2xl font-semibold mb-2">Configuration Error</h2>
           <p className="text-muted-foreground">Google Maps API key is not configured</p>
         </div>
       </div>

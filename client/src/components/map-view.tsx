@@ -8,13 +8,15 @@ interface MapViewProps {
   userLocation: Location;
 }
 
+const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
+
 export default function MapView({ userLocation }: MapViewProps) {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const { toast } = useToast();
 
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
-    libraries: ["places"],
+    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "",
+    libraries,
   });
 
   const mapCenter = useMemo(() => ({
@@ -32,21 +34,27 @@ export default function MapView({ userLocation }: MapViewProps) {
   }, []);
 
   if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
-    toast({
-      title: "Configuration Error",
-      description: "Google Maps API key is not configured",
-      variant: "destructive"
-    });
-    return null;
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-2">Configuration Required</h2>
+          <p className="text-muted-foreground">Google Maps API key is not configured</p>
+        </div>
+      </div>
+    );
   }
 
   if (loadError) {
-    toast({
-      title: "Map Error",
-      description: "Failed to load Google Maps. Please ensure the API key is correct and billing is enabled.",
-      variant: "destructive"
-    });
-    return null;
+    console.error("Google Maps load error:", loadError);
+    return (
+      <div className="h-full w-full flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-2">Map Error</h2>
+          <p className="text-muted-foreground">Failed to load Google Maps.</p>
+          <p className="text-sm text-destructive mt-2">Please ensure the API key is correct and billing is enabled.</p>
+        </div>
+      </div>
+    );
   }
 
   if (!isLoaded) {
