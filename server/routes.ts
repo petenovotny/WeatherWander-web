@@ -10,14 +10,18 @@ const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "default_key";
 export async function registerRoutes(app: Express) {
   app.get("/api/weather", async (req, res) => {
     try {
+      console.log("Weather API request params:", req.query);
       const { lat, lng } = locationSchema.parse(req.query);
 
-      const response = await axios.get(
-        `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lng}&exclude=minutely,hourly,alerts&units=metric&appid=${WEATHER_API_KEY}`
-      );
+      const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lng}&exclude=minutely,hourly,alerts&units=metric&appid=${WEATHER_API_KEY}`;
+      console.log("Calling Weather API:", url.replace(WEATHER_API_KEY, 'HIDDEN'));
 
-      console.log('Weather API Response:', response.data);
+      const response = await axios.get(url);
+      console.log('Weather API Raw Response:', response.data);
+
       const weather = weatherResponseSchema.parse(response.data);
+      console.log('Parsed Weather Response:', weather);
+
       res.json(weather);
     } catch (error) {
       console.error('Weather API Error:', error);
@@ -27,6 +31,7 @@ export async function registerRoutes(app: Express) {
 
   app.get("/api/distance", async (req, res) => {
     try {
+      console.log("Distance API request params:", req.query);
       const querySchema = z.object({
         origin: locationSchema,
         destination: locationSchema
@@ -34,12 +39,15 @@ export async function registerRoutes(app: Express) {
 
       const { origin, destination } = querySchema.parse(req.query);
 
-      const response = await axios.get(
-        `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.lat},${origin.lng}&destinations=${destination.lat},${destination.lng}&key=${GOOGLE_API_KEY}`
-      );
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.lat},${origin.lng}&destinations=${destination.lat},${destination.lng}&key=${GOOGLE_API_KEY}`;
+      console.log("Calling Distance API:", url.replace(GOOGLE_API_KEY, 'HIDDEN'));
 
-      console.log('Distance API Response:', response.data);
+      const response = await axios.get(url);
+      console.log('Distance API Raw Response:', response.data);
+
       const distance = distanceResponseSchema.parse(response.data);
+      console.log('Parsed Distance Response:', distance);
+
       res.json(distance);
     } catch (error) {
       console.error('Distance API Error:', error);

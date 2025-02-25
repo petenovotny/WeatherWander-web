@@ -11,7 +11,9 @@ export default function Home() {
   const { toast } = useToast();
 
   const requestLocation = () => {
+    console.log("Attempting to request location...");
     if (!("geolocation" in navigator)) {
+      console.error("Geolocation not supported");
       toast({
         title: "Browser Error",
         description: "Geolocation is not supported by your browser",
@@ -21,8 +23,13 @@ export default function Home() {
     }
 
     setIsLoading(true);
+    console.log("Requesting geolocation from browser...");
     navigator.geolocation.getCurrentPosition(
       (position) => {
+        console.log("Location received:", {
+          lat: position.coords.latitude,
+          lng: position.coords.longitude
+        });
         setUserLocation({
           lat: position.coords.latitude,
           lng: position.coords.longitude
@@ -30,6 +37,7 @@ export default function Home() {
         setIsLoading(false);
       },
       (error) => {
+        console.error("Geolocation error:", error);
         setIsLoading(false);
         let errorMessage = "Could not get your location. ";
         switch (error.code) {
@@ -60,12 +68,14 @@ export default function Home() {
   };
 
   useEffect(() => {
+    console.log("Home component mounted, API Key present:", !!import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
     // Request location after a small delay to ensure everything is loaded
     const timeoutId = setTimeout(requestLocation, 1000);
     return () => clearTimeout(timeoutId);
   }, []);
 
   if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+    console.error("Google Maps API key not found");
     return (
       <div className="h-screen w-full flex items-center justify-center">
         <div className="text-center">

@@ -26,16 +26,26 @@ const weatherIcons: Record<string, any> = {
 export default function WeatherInfo({ location, userLocation }: WeatherInfoProps) {
   const weatherQuery = useQuery<WeatherResponse>({
     queryKey: ["/api/weather", location.lat, location.lng],
-    queryFn: () =>
-      fetch(`/api/weather?lat=${location.lat}&lng=${location.lng}`).then((r) => r.json()),
+    queryFn: async () => {
+      console.log("Fetching weather for location:", location);
+      const response = await fetch(`/api/weather?lat=${location.lat}&lng=${location.lng}`);
+      const data = await response.json();
+      console.log("Weather API response:", data);
+      return data;
+    },
   });
 
   const distanceQuery = useQuery<DistanceResponse>({
     queryKey: ["/api/distance", userLocation, location],
-    queryFn: () =>
-      fetch(
+    queryFn: async () => {
+      console.log("Fetching distance between:", { userLocation, location });
+      const response = await fetch(
         `/api/distance?origin[lat]=${userLocation.lat}&origin[lng]=${userLocation.lng}&destination[lat]=${location.lat}&destination[lng]=${location.lng}`
-      ).then((r) => r.json()),
+      );
+      const data = await response.json();
+      console.log("Distance API response:", data);
+      return data;
+    },
   });
 
   if (weatherQuery.isLoading || distanceQuery.isLoading) {
@@ -52,6 +62,12 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   }
 
   if (weatherQuery.error || distanceQuery.error || !weatherQuery.data || !distanceQuery.data) {
+    console.error("Query errors:", {
+      weatherError: weatherQuery.error,
+      distanceError: distanceQuery.error,
+      weatherData: weatherQuery.data,
+      distanceData: distanceQuery.data
+    });
     return (
       <Card className="absolute bottom-4 left-4 w-96">
         <CardContent className="p-4">
@@ -63,10 +79,12 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   const weather = weatherQuery.data;
   const distance = distanceQuery.data;
+  console.log("Processing response data:", { weather, distance });
 
   // Check if we have valid distance data
-  const element = distance.rows[0]?.elements[0];
+  const element = distance?.rows?.[0]?.elements?.[0];
   if (!element || element.status !== "OK" || !element.duration) {
+    console.error("Invalid distance data:", { element });
     return (
       <Card className="absolute bottom-4 left-4 w-96">
         <CardContent className="p-4">
@@ -80,6 +98,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   // Check if we have valid weather data
   if (!weather?.current?.weather?.[0] || !weather?.daily?.[0]) {
+    console.error("Invalid weather data:", { weather });
     return (
       <Card className="absolute bottom-4 left-4 w-96">
         <CardContent className="p-4">
