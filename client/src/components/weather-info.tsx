@@ -27,15 +27,16 @@ const weatherIcons: Record<string, any> = {
 export default function WeatherInfo({ location, userLocation }: WeatherInfoProps) {
   const weatherQuery = useQuery<WeatherResponse>({
     queryKey: ["/api/weather", location.lat, location.lng],
-    queryFn: () => 
-      fetch(`/api/weather?lat=${location.lat}&lng=${location.lng}`).then(r => r.json())
+    queryFn: () =>
+      fetch(`/api/weather?lat=${location.lat}&lng=${location.lng}`).then((r) => r.json()),
   });
 
   const distanceQuery = useQuery<DistanceResponse>({
     queryKey: ["/api/distance", userLocation, location],
     queryFn: () =>
-      fetch(`/api/distance?origin[lat]=${userLocation.lat}&origin[lng]=${userLocation.lng}&destination[lat]=${location.lat}&destination[lng]=${location.lng}`)
-        .then(r => r.json())
+      fetch(
+        `/api/distance?origin[lat]=${userLocation.lat}&origin[lng]=${userLocation.lng}&destination[lat]=${location.lat}&destination[lng]=${location.lng}`
+      ).then((r) => r.json()),
   });
 
   if (weatherQuery.isLoading || distanceQuery.isLoading) {
@@ -63,9 +64,19 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   const weather = weatherQuery.data;
   const distance = distanceQuery.data;
-  const duration = distance.rows[0]?.elements[0]?.duration;
 
-  if (!weather || !duration) return null;
+  // Ensure we have valid response data
+  if (!weather?.current?.weather?.[0] || !distance?.rows?.[0]?.elements?.[0]?.duration) {
+    return (
+      <Card className="absolute bottom-4 left-4 w-96">
+        <CardContent className="p-4">
+          <p className="text-destructive">Invalid response data</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const duration = distance.rows[0].elements[0].duration;
 
   return (
     <Card className="absolute bottom-4 left-4 w-96 bg-white/90 backdrop-blur">
@@ -78,7 +89,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
         <div className="grid grid-cols-4 gap-2">
           {[
             { temp: weather.current.temp, weather: weather.current.weather },
-            ...weather.daily.slice(0, 3)
+            ...weather.daily.slice(0, 3),
           ].map((day, i) => {
             const WeatherIcon = weatherIcons[day.weather[0].icon] || Cloud;
             return (
@@ -90,10 +101,10 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
                 ) : (
                   <div>
                     <p className="text-xs font-medium">
-                      {Math.round(typeof day.temp === 'number' ? day.temp : day.temp.max)}°
+                      {Math.round(typeof day.temp === "number" ? day.temp : day.temp.max)}°
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {Math.round(typeof day.temp === 'number' ? day.temp : day.temp.min)}°
+                      {Math.round(typeof day.temp === "number" ? day.temp : day.temp.min)}°
                     </p>
                   </div>
                 )}
