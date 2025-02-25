@@ -11,7 +11,11 @@ export async function registerRoutes(app: Express) {
   app.get("/api/weather", async (req, res) => {
     try {
       console.log("Weather API request params:", req.query);
-      const { lat, lng } = locationSchema.parse(req.query);
+      // Convert string parameters to numbers
+      const { lat, lng } = locationSchema.parse({
+        lat: Number(req.query.lat),
+        lng: Number(req.query.lng)
+      });
 
       const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lng}&exclude=minutely,hourly,alerts&units=metric&appid=${WEATHER_API_KEY}`;
       console.log("Calling Weather API:", url.replace(WEATHER_API_KEY, 'HIDDEN'));
@@ -33,8 +37,14 @@ export async function registerRoutes(app: Express) {
     try {
       console.log("Distance API request params:", req.query);
       const querySchema = z.object({
-        origin: locationSchema,
-        destination: locationSchema
+        origin: z.object({
+          lat: z.string().transform(val => Number(val)),
+          lng: z.string().transform(val => Number(val))
+        }),
+        destination: z.object({
+          lat: z.string().transform(val => Number(val)),
+          lng: z.string().transform(val => Number(val))
+        })
       });
 
       const { origin, destination } = querySchema.parse(req.query);
@@ -45,13 +55,25 @@ export async function registerRoutes(app: Express) {
       const response = await axios.get(url);
       console.log('Distance API Raw Response:', response.data);
 
+      if (response.data.status !== "OK") {
+        throw new Error(`Distance Matrix API error: ${response.data.status}`);
+      }
+
       const distance = distanceResponseSchema.parse(response.data);
       console.log('Parsed Distance Response:', distance);
+
+      // Additional validation of the response
+      const element = distance.rows[0]?.elements[0];
+      if (!element || element.status !== "OK" || !element.duration) {
+        throw new Error(element?.error_message || "Could not calculate travel time");
+      }
 
       res.json(distance);
     } catch (error) {
       console.error('Distance API Error:', error);
-      res.status(400).json({ error: "Invalid request" });
+      res.status(400).json({ 
+        error: error instanceof Error ? error.message : "Invalid request" 
+      });
     }
   });
 

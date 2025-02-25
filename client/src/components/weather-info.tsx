@@ -29,6 +29,10 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
     queryFn: async () => {
       console.log("Fetching weather for location:", location);
       const response = await fetch(`/api/weather?lat=${location.lat}&lng=${location.lng}`);
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to fetch weather data");
+      }
       const data = await response.json();
       console.log("Weather API response:", data);
       return data;
@@ -42,6 +46,10 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
       const response = await fetch(
         `/api/distance?origin[lat]=${userLocation.lat}&origin[lng]=${userLocation.lng}&destination[lat]=${location.lat}&destination[lng]=${location.lng}`
       );
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || "Failed to calculate travel time");
+      }
       const data = await response.json();
       console.log("Distance API response:", data);
       return data;
@@ -61,30 +69,33 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
     );
   }
 
-  if (weatherQuery.error || distanceQuery.error || !weatherQuery.data || !distanceQuery.data) {
+  if (weatherQuery.error || distanceQuery.error) {
     console.error("Query errors:", {
       weatherError: weatherQuery.error,
-      distanceError: distanceQuery.error,
-      weatherData: weatherQuery.data,
-      distanceData: distanceQuery.data
+      distanceError: distanceQuery.error
     });
     return (
       <Card className="absolute bottom-4 left-4 w-96">
         <CardContent className="p-4">
-          <p className="text-destructive">Error loading data</p>
+          <p className="text-destructive">
+            {(weatherQuery.error as Error)?.message || 
+             (distanceQuery.error as Error)?.message || 
+             "Error loading data"}
+          </p>
         </CardContent>
       </Card>
     );
   }
 
+  if (!weatherQuery.data || !distanceQuery.data) {
+    return null;
+  }
+
   const weather = weatherQuery.data;
   const distance = distanceQuery.data;
-  console.log("Processing response data:", { weather, distance });
+  const element = distance.rows[0]?.elements[0];
 
-  // Check if we have valid distance data
-  const element = distance?.rows?.[0]?.elements?.[0];
-  if (!element || element.status !== "OK" || !element.duration) {
-    console.error("Invalid distance data:", { element });
+  if (!element?.duration || element.status !== "OK") {
     return (
       <Card className="absolute bottom-4 left-4 w-96">
         <CardContent className="p-4">
@@ -96,26 +107,12 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
     );
   }
 
-  // Check if we have valid weather data
-  if (!weather?.current?.weather?.[0] || !weather?.daily?.[0]) {
-    console.error("Invalid weather data:", { weather });
-    return (
-      <Card className="absolute bottom-4 left-4 w-96">
-        <CardContent className="p-4">
-          <p className="text-destructive">Could not load weather data</p>
-        </CardContent>
-      </Card>
-    );
-  }
-
-  const duration = element.duration;
-
   return (
     <Card className="absolute bottom-4 left-4 w-96 bg-white/90 backdrop-blur">
       <CardContent className="p-4">
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">Drive time:</p>
-          <p className="text-lg font-semibold">{duration.text}</p>
+          <p className="text-lg font-semibold">{element.duration.text}</p>
         </div>
 
         <div className="grid grid-cols-4 gap-2">
