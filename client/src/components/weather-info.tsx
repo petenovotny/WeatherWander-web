@@ -51,7 +51,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
     );
   }
 
-  if (weatherQuery.error || distanceQuery.error) {
+  if (weatherQuery.error || distanceQuery.error || !weatherQuery.data || !distanceQuery.data) {
     return (
       <Card className="absolute bottom-4 left-4 w-96">
         <CardContent className="p-4">
@@ -64,6 +64,8 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   const weather = weatherQuery.data;
   const distance = distanceQuery.data;
 
+  if (!weather || !distance) return null;
+
   return (
     <Card className="absolute bottom-4 left-4 w-96 bg-white/90 backdrop-blur">
       <CardContent className="p-4">
@@ -71,9 +73,12 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
           <p className="text-sm text-muted-foreground">Drive time:</p>
           <p className="text-lg font-semibold">{distance.duration.text}</p>
         </div>
-        
+
         <div className="grid grid-cols-4 gap-2">
-          {[weather.current, ...weather.daily.slice(0, 3)].map((day, i) => {
+          {[
+            { temp: weather.current.temp, weather: weather.current.weather },
+            ...weather.daily.slice(0, 3)
+          ].map((day, i) => {
             const WeatherIcon = weatherIcons[day.weather[0].icon] || Cloud;
             return (
               <div key={i} className="text-center">
@@ -83,8 +88,12 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
                   <p className="text-sm font-medium">{Math.round(day.temp)}°C</p>
                 ) : (
                   <div>
-                    <p className="text-xs font-medium">{Math.round(day.temp.max)}°</p>
-                    <p className="text-xs text-muted-foreground">{Math.round(day.temp.min)}°</p>
+                    <p className="text-xs font-medium">
+                      {Math.round(typeof day.temp === 'number' ? day.temp : day.temp.max)}°
+                    </p>
+                    <p className="text-xs text-muted-foreground">
+                      {Math.round(typeof day.temp === 'number' ? day.temp : day.temp.min)}°
+                    </p>
                   </div>
                 )}
               </div>
