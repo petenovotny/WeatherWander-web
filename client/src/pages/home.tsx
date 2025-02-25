@@ -59,9 +59,25 @@ export default function Home() {
     }
   };
 
+  // Request location when component mounts
   useEffect(() => {
-    requestLocation();
+    const timeoutId = setTimeout(() => {
+      requestLocation();
+    }, 1000); // Small delay to ensure UI is ready
+
+    return () => clearTimeout(timeoutId);
   }, []);
+
+  if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+    return (
+      <div className="h-screen w-full flex items-center justify-center">
+        <div className="text-center">
+          <h2 className="text-2xl font-semibold mb-2">Configuration Required</h2>
+          <p className="text-muted-foreground">Google Maps API key is not configured</p>
+        </div>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
