@@ -118,7 +118,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
         <div className="grid grid-cols-4 gap-2">
           {[
             { temp: weather.current.temp, weather: weather.current.weather },
-            ...weather.daily.slice(0, 3),
+            ...weather.daily.slice(0, 3)
           ].map((day, i) => {
             const WeatherIcon = weatherIcons[day.weather[0].icon] || Cloud;
             return (

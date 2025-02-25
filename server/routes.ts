@@ -17,6 +17,10 @@ export async function registerRoutes(app: Express) {
         lng: Number(req.query.lng)
       });
 
+      if (!WEATHER_API_KEY || WEATHER_API_KEY === "default_key") {
+        throw new Error("OpenWeatherMap API key is not configured");
+      }
+
       const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lng}&exclude=minutely,hourly,alerts&units=metric&appid=${WEATHER_API_KEY}`;
       console.log("Calling Weather API:", url.replace(WEATHER_API_KEY, 'HIDDEN'));
 
@@ -29,7 +33,13 @@ export async function registerRoutes(app: Express) {
       res.json(weather);
     } catch (error) {
       console.error('Weather API Error:', error);
-      res.status(400).json({ error: "Invalid request" });
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ error: "Invalid coordinates format" });
+      } else if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: "Invalid request" });
+      }
     }
   });
 
@@ -46,6 +56,10 @@ export async function registerRoutes(app: Express) {
           lng: z.string().transform(val => Number(val))
         })
       });
+
+      if (!GOOGLE_API_KEY || GOOGLE_API_KEY === "default_key") {
+        throw new Error("Google Maps API key is not configured");
+      }
 
       const { origin, destination } = querySchema.parse(req.query);
 
@@ -71,9 +85,16 @@ export async function registerRoutes(app: Express) {
       res.json(distance);
     } catch (error) {
       console.error('Distance API Error:', error);
-      res.status(400).json({ 
-        error: error instanceof Error ? error.message : "Invalid request" 
-      });
+      if (error instanceof z.ZodError) {
+        res.status(400).json({ 
+          error: "Invalid coordinates format",
+          details: error.errors.map(e => e.message)
+        });
+      } else if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: "Invalid request" });
+      }
     }
   });
 
