@@ -26,10 +26,14 @@ export const weatherResponseSchema = z.object({
 });
 
 export const distanceResponseSchema = z.object({
-  duration: z.object({
-    text: z.string(),
-    value: z.number()
-  })
+  rows: z.array(z.object({
+    elements: z.array(z.object({
+      duration: z.object({
+        text: z.string(),
+        value: z.number()
+      })
+    }))
+  }))
 });
 
 export type Location = z.infer<typeof locationSchema>;

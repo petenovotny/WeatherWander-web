@@ -63,15 +63,16 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   const weather = weatherQuery.data;
   const distance = distanceQuery.data;
+  const duration = distance.rows[0]?.elements[0]?.duration;
 
-  if (!weather || !distance) return null;
+  if (!weather || !duration) return null;
 
   return (
     <Card className="absolute bottom-4 left-4 w-96 bg-white/90 backdrop-blur">
       <CardContent className="p-4">
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">Drive time:</p>
-          <p className="text-lg font-semibold">{distance.duration.text}</p>
+          <p className="text-lg font-semibold">{duration.text}</p>
         </div>
 
         <div className="grid grid-cols-4 gap-2">
