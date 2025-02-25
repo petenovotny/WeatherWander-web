@@ -28,10 +28,12 @@ export const weatherResponseSchema = z.object({
 export const distanceResponseSchema = z.object({
   rows: z.array(z.object({
     elements: z.array(z.object({
+      status: z.string(),
       duration: z.object({
         text: z.string(),
         value: z.number()
-      })
+      }).optional(),
+      error_message: z.string().optional()
     }))
   }))
 });

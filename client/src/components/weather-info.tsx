@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Cloud, CloudRain, Sun, Loader2 } from "lucide-react";
 import type { Location, WeatherResponse, DistanceResponse } from "@shared/schema";
 
@@ -65,18 +64,32 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   const weather = weatherQuery.data;
   const distance = distanceQuery.data;
 
-  // Ensure we have valid response data
-  if (!weather?.current?.weather?.[0] || !distance?.rows?.[0]?.elements?.[0]?.duration) {
+  // Check if we have valid distance data
+  const element = distance.rows[0]?.elements[0];
+  if (!element || element.status !== "OK" || !element.duration) {
     return (
       <Card className="absolute bottom-4 left-4 w-96">
         <CardContent className="p-4">
-          <p className="text-destructive">Invalid response data</p>
+          <p className="text-destructive">
+            {element?.error_message || "Could not calculate travel time"}
+          </p>
         </CardContent>
       </Card>
     );
   }
 
-  const duration = distance.rows[0].elements[0].duration;
+  // Check if we have valid weather data
+  if (!weather?.current?.weather?.[0] || !weather?.daily?.[0]) {
+    return (
+      <Card className="absolute bottom-4 left-4 w-96">
+        <CardContent className="p-4">
+          <p className="text-destructive">Could not load weather data</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const duration = element.duration;
 
   return (
     <Card className="absolute bottom-4 left-4 w-96 bg-white/90 backdrop-blur">
