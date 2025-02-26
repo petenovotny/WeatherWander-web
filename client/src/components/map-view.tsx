@@ -124,7 +124,7 @@ export default function MapView({ userLocation }: MapViewProps) {
           }}
         />
 
-        {/* Selected location marker and info */}
+        {/* Selected location marker */}
         {selectedLocation && (
           <Marker 
             position={selectedLocation}
@@ -139,9 +139,9 @@ export default function MapView({ userLocation }: MapViewProps) {
         )}
       </GoogleMap>
 
-      {/* Weather info card - positioned outside the map but overlaid */}
+      {/* Weather info - positioned directly below the marker */}
       {selectedLocation && (
-        <div className="absolute top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-full z-[9999]">
+        <div className="absolute left-[50%] top-[50%] transform -translate-x-1/2 translate-y-4 z-[9999]">
           <WeatherInfo 
             location={selectedLocation}
             userLocation={userLocation}

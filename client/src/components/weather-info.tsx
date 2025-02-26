@@ -76,10 +76,10 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   if (weatherQuery.isLoading || distanceQuery.isLoading) {
     return (
-      <div className="bg-white shadow-lg rounded-md p-2 z-50">
-        <div className="flex items-center space-x-2">
-          <Loader2 className="h-4 w-4 animate-spin" />
-          <p className="text-xs">Loading info...</p>
+      <div className="bg-white/90 shadow-lg rounded-md p-2 z-50 text-center w-[180px]">
+        <div className="flex items-center justify-center space-x-2">
+          <Loader2 className="h-3 w-3 animate-spin" />
+          <p className="text-xs">Loading...</p>
         </div>
       </div>
     );
@@ -96,9 +96,9 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
                          "Error loading data";
 
     return (
-      <div className="bg-white shadow-lg rounded-md p-2 z-50">
-        <div className="flex items-start space-x-2">
-          <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+      <div className="bg-white/90 shadow-lg rounded-md p-2 z-50 w-[180px]">
+        <div className="flex items-center justify-center space-x-1">
+          <AlertCircle className="h-3 w-3 text-red-500 flex-shrink-0" />
           <p className="text-xs text-red-600">{errorMessage}</p>
         </div>
       </div>
@@ -109,8 +109,8 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   if (!weatherQuery.data) {
     console.warn("Weather data is missing!");
     return (
-      <div className="bg-white shadow-lg rounded-md p-2 z-50">
-        <p className="text-xs">Weather data unavailable</p>
+      <div className="bg-white/90 shadow-lg rounded-md p-2 z-50 w-[180px]">
+        <p className="text-xs text-center">Weather data unavailable</p>
       </div>
     );
   }
@@ -118,8 +118,8 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   if (!distanceQuery.data) {
     console.warn("Distance data is missing!");
     return (
-      <div className="bg-white shadow-lg rounded-md p-2 z-50">
-        <p className="text-xs">Travel time data unavailable</p>
+      <div className="bg-white/90 shadow-lg rounded-md p-2 z-50 w-[180px]">
+        <p className="text-xs text-center">Travel time data unavailable</p>
       </div>
     );
   }
@@ -139,8 +139,8 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   if (!hasElements) {
     console.warn("Missing elements in distance data");
     return (
-      <div className="bg-white shadow-lg rounded-md p-2 z-50">
-        <p className="text-xs text-red-600">Could not calculate travel time</p>
+      <div className="bg-white/90 shadow-lg rounded-md p-2 z-50 w-[180px]">
+        <p className="text-xs text-center text-red-600">Could not calculate travel time</p>
       </div>
     );
   }
@@ -149,8 +149,8 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   if (!element?.duration || element.status !== "OK") {
     return (
-      <div className="bg-white shadow-lg rounded-md p-2 z-50">
-        <p className="text-xs text-red-600">
+      <div className="bg-white/90 shadow-lg rounded-md p-2 z-50 w-[180px]">
+        <p className="text-xs text-center text-red-600">
           {element?.error_message || "Could not calculate travel time"}
         </p>
       </div>
@@ -162,41 +162,46 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   const WeatherIcon = weatherIcons[currentWeather.icon] || Cloud;
 
   return (
-    <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 z-50 min-w-[200px]">
-      {weather.isMockData && (
-        <div className="mb-2 px-2 py-1 bg-amber-50 rounded-sm flex items-center gap-1">
-          <AlertTriangle className="h-3 w-3 text-amber-500" />
-          <p className="text-xs text-amber-700">Using simulated data</p>
+    <div className="relative">
+      {/* Triangle pointer at the top */}
+      <div className="absolute left-1/2 -top-2 transform -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-white/95"></div>
+
+      {/* Main content */}
+      <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-2 text-center min-w-[180px] max-w-[220px]">
+        {weather.isMockData && (
+          <div className="mb-1 px-1 py-0.5 bg-amber-50 rounded-sm flex items-center justify-center gap-1">
+            <AlertTriangle className="h-2 w-2 text-amber-500" />
+            <p className="text-[10px] text-amber-700">Simulated weather data</p>
+          </div>
+        )}
+
+        <div className="flex justify-between items-center px-2">
+          <div className="flex flex-col items-start">
+            <p className="text-xs text-gray-500">Now</p>
+            <p className="text-base font-semibold">{Math.round(weather.current.temp as number)}°C</p>
+            <p className="text-[10px] text-gray-500">{currentWeather.description}</p>
+          </div>
+          <WeatherIcon className="h-8 w-8 text-primary" />
         </div>
-      )}
 
-      <div className="flex justify-between items-center">
-        <div className="flex flex-col">
-          <p className="text-xs text-gray-500">Current Temperature</p>
-          <p className="text-lg font-semibold">{Math.round(weather.current.temp as number)}°C</p>
-          <p className="text-xs text-gray-500">{currentWeather.description}</p>
+        <div className="mt-1 pt-1 border-t border-gray-100 px-2">
+          <p className="text-xs text-gray-500">Drive time</p>
+          <p className="text-sm font-medium">{element.duration.text}</p>
         </div>
-        <WeatherIcon className="h-10 w-10 text-primary" />
-      </div>
 
-      <div className="mt-2 pt-2 border-t border-gray-100">
-        <p className="text-xs text-gray-500">Drive time from your location</p>
-        <p className="text-lg font-semibold">{element.duration.text}</p>
-      </div>
-
-      <div className="mt-2 pt-2 border-t border-gray-100">
-        <p className="text-xs text-gray-500 mb-1">3-Day Forecast</p>
-        <div className="grid grid-cols-3 gap-1">
-          {weather.daily.slice(1, 4).map((day, i) => {
-            const DayWeatherIcon = weatherIcons[day.weather[0].icon] || Cloud;
-            return (
-              <div key={i} className="text-center">
-                <p className="text-xs">Day {i+1}</p>
-                <DayWeatherIcon className="h-5 w-5 mx-auto my-1" />
-                <p className="text-xs">{Math.round((day.temp as {max: number}).max)}°</p>
-              </div>
-            );
-          })}
+        <div className="mt-1 pt-1 border-t border-gray-100">
+          <div className="flex justify-between px-1">
+            {weather.daily.slice(1, 4).map((day, i) => {
+              const DayWeatherIcon = weatherIcons[day.weather[0].icon] || Cloud;
+              return (
+                <div key={i} className="text-center">
+                  <p className="text-[10px] text-gray-500">Day {i+1}</p>
+                  <DayWeatherIcon className="h-4 w-4 mx-auto my-0.5" />
+                  <p className="text-[10px]">{Math.round((day.temp as {max: number}).max)}°</p>
+                </div>
+              );
+            })}
+          </div>
         </div>
       </div>
     </div>
