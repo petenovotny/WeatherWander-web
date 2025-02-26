@@ -145,9 +145,10 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
               }}>
                 <span style={{ fontSize: '8px', color: '#4b5563', fontWeight: '500' }}>{day.label}</span>
                 <DayIcon size={12} style={{ margin: '1px 0' }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
-                  <span style={{ color: '#1d4ed8', fontSize: '9px', fontWeight: '500' }}>{day.low}°</span>
+                {/* Vertical temperature display with high above low */}
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
                   <span style={{ color: '#b91c1c', fontSize: '9px', fontWeight: '500' }}>{day.high}°</span>
+                  <span style={{ color: '#1d4ed8', fontSize: '9px', fontWeight: '500' }}>{day.low}°</span>
                 </div>
               </div>
             );
