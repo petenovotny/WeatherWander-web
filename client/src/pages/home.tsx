@@ -2,18 +2,22 @@ import { useEffect, useState } from "react";
 import MapView from "@/components/map-view";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { MapPin } from "lucide-react";
+import { MapPin, AlertCircle } from "lucide-react";
 import type { Location } from "@shared/schema";
 
 export default function Home() {
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [locationError, setLocationError] = useState<string | null>(null);
   const { toast } = useToast();
 
   const requestLocation = () => {
     console.log("Attempting to request location...");
+    setLocationError(null);
+
     if (!("geolocation" in navigator)) {
       console.error("Geolocation not supported");
+      setLocationError("Geolocation is not supported by your browser");
       toast({
         title: "Browser Error",
         description: "Geolocation is not supported by your browser",
@@ -53,6 +57,7 @@ export default function Home() {
           default:
             errorMessage += "An unknown error occurred.";
         }
+        setLocationError(errorMessage);
         toast({
           title: "Location Error",
           description: errorMessage,
@@ -61,16 +66,21 @@ export default function Home() {
       },
       {
         enableHighAccuracy: true,
-        timeout: 5000,
+        timeout: 10000, // Increased timeout
         maximumAge: 0
       }
     );
   };
 
   useEffect(() => {
-    console.log("Home component mounted, API Key present:", !!import.meta.env.VITE_GOOGLE_MAPS_API_KEY);
-    // Request location after a small delay to ensure everything is loaded
-    const timeoutId = setTimeout(requestLocation, 1000);
+    const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY;
+    console.log("Home component mounted, API Key present:", !!apiKey);
+
+    // Request location after a delay to ensure component is fully mounted
+    const timeoutId = setTimeout(() => {
+      requestLocation();
+    }, 1500);
+
     return () => clearTimeout(timeoutId);
   }, []);
 
@@ -78,9 +88,13 @@ export default function Home() {
     console.error("Google Maps API key not found");
     return (
       <div className="h-screen w-full flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
+          <AlertCircle className="h-12 w-12 text-amber-500 mx-auto mb-4" />
           <h2 className="text-2xl font-semibold mb-2">Configuration Error</h2>
-          <p className="text-muted-foreground">Google Maps API key is not configured</p>
+          <p className="text-muted-foreground mb-4">Google Maps API key is not configured</p>
+          <p className="text-sm text-muted-foreground">
+            Please set the VITE_GOOGLE_MAPS_API_KEY environment variable.
+          </p>
         </div>
       </div>
     );
@@ -89,7 +103,7 @@ export default function Home() {
   if (isLoading) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
           <h2 className="text-2xl font-semibold mb-2">Loading Location...</h2>
           <p className="text-muted-foreground mb-4">Please allow location access when prompted</p>
           <div className="animate-pulse">
@@ -103,9 +117,17 @@ export default function Home() {
   if (!userLocation) {
     return (
       <div className="h-screen w-full flex items-center justify-center">
-        <div className="text-center">
+        <div className="text-center max-w-md mx-auto p-6 bg-white rounded-lg shadow-lg">
           <h2 className="text-2xl font-semibold mb-2">Location Access Required</h2>
-          <p className="text-muted-foreground mb-4">We need your location to show nearby weather and calculate travel times</p>
+          <p className="text-muted-foreground mb-4">
+            We need your location to show nearby weather and calculate travel times
+          </p>
+          {locationError && (
+            <div className="mb-4 p-3 bg-red-50 text-red-700 rounded-md text-sm">
+              <p className="font-medium">Error: {locationError}</p>
+              <p className="mt-1">Please try again or check your browser settings.</p>
+            </div>
+          )}
           <Button onClick={requestLocation} className="gap-2">
             <MapPin className="h-4 w-4" />
             Enable Location

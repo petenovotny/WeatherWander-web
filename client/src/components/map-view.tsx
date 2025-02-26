@@ -8,14 +8,20 @@ interface MapViewProps {
   userLocation: Location;
 }
 
+// Define libraries outside component to prevent unnecessary re-renders
 const libraries: ("places" | "drawing" | "geometry" | "localContext" | "visualization")[] = ["places"];
 
 export default function MapView({ userLocation }: MapViewProps) {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const { toast } = useToast();
 
+  const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "";
+
+  // Log for debugging - will be removed in production
+  console.log("Using Google Maps API Key:", apiKey ? "Key is present" : "Key is missing");
+
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "",
+    googleMapsApiKey: apiKey,
     libraries,
   });
 
@@ -33,7 +39,7 @@ export default function MapView({ userLocation }: MapViewProps) {
     });
   }, []);
 
-  if (!import.meta.env.VITE_GOOGLE_MAPS_API_KEY) {
+  if (!apiKey) {
     return (
       <div className="h-full w-full flex items-center justify-center">
         <div className="text-center">
@@ -51,7 +57,8 @@ export default function MapView({ userLocation }: MapViewProps) {
         <div className="text-center">
           <h2 className="text-2xl font-semibold mb-2">Map Error</h2>
           <p className="text-muted-foreground">Failed to load Google Maps.</p>
-          <p className="text-sm text-destructive mt-2">Please ensure the API key is correct and billing is enabled.</p>
+          <p className="text-sm text-destructive mt-2">Error details: {loadError.message}</p>
+          <p className="text-sm text-destructive mt-2">Please ensure the API key is correct and has Maps JavaScript API enabled.</p>
         </div>
       </div>
     );
