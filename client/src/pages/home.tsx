@@ -2,13 +2,14 @@ import { useEffect, useState } from "react";
 import MapView from "@/components/map-view";
 import { useToast } from "@/hooks/use-toast";
 import { Button } from "@/components/ui/button";
-import { MapPin, AlertCircle } from "lucide-react";
+import { MapPin, AlertCircle, Info } from "lucide-react";
 import type { Location } from "@shared/schema";
 
 export default function Home() {
   const [userLocation, setUserLocation] = useState<Location | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
+  const [showInstructions, setShowInstructions] = useState(true);
   const { toast } = useToast();
 
   const requestLocation = () => {
@@ -138,8 +139,32 @@ export default function Home() {
   }
 
   return (
-    <div className="h-screen w-full">
+    <div className="h-screen w-full relative">
       <MapView userLocation={userLocation} />
+
+      {/* Instructions tooltip - auto dismisses after 10 seconds */}
+      {showInstructions && (
+        <div className="absolute left-4 top-4 z-10 max-w-xs bg-white/90 backdrop-blur-sm rounded-md p-3 shadow-lg animate-fade-in">
+          <div className="flex items-start gap-2">
+            <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
+            <div>
+              <h3 className="font-medium text-sm">Multi-Location Weather</h3>
+              <p className="text-xs text-gray-600 mt-1">
+                Click anywhere on the map to add locations and view weather data. Click on a marker to remove it.
+                Weather information stays visible until you refresh the page.
+              </p>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                className="mt-2 w-full text-xs" 
+                onClick={() => setShowInstructions(false)}
+              >
+                Got it
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

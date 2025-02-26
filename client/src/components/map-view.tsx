@@ -3,6 +3,8 @@ import { GoogleMap, useLoadScript, Marker } from "@react-google-maps/api";
 import MapOverlay from "./MapOverlay";
 import type { Location } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
+import { Button } from "@/components/ui/button";
+import { Trash2, MapPin, X } from "lucide-react";
 
 interface MapViewProps {
   userLocation: Location;
@@ -12,7 +14,9 @@ interface MapViewProps {
 const libraries = ["places"] as const;
 
 export default function MapView({ userLocation }: MapViewProps) {
-  const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
+  // Change from single location to array of locations
+  const [selectedLocations, setSelectedLocations] = useState<Location[]>([]);
+  const [showRemoveTooltip, setShowRemoveTooltip] = useState(false);
   const { toast } = useToast();
   const mapRef = useRef<google.maps.Map | null>(null);
 
@@ -40,12 +44,29 @@ export default function MapView({ userLocation }: MapViewProps) {
     };
 
     console.log("Map clicked, setting location:", newLocation);
-    setSelectedLocation(newLocation);
-  }, []);
+    // Add the new location to the array instead of replacing
+    setSelectedLocations(prev => [...prev, newLocation]);
+
+    // Show remove tooltip hint the first time a location is added
+    if (selectedLocations.length === 0) {
+      setShowRemoveTooltip(true);
+      setTimeout(() => setShowRemoveTooltip(false), 5000); // Hide after 5 seconds
+    }
+  }, [selectedLocations]);
 
   // Handle map load event to store reference
   const onMapLoad = useCallback((map: google.maps.Map) => {
     mapRef.current = map;
+  }, []);
+
+  // Function to clear all selected locations
+  const clearAllLocations = useCallback(() => {
+    setSelectedLocations([]);
+  }, []);
+
+  // Function to remove a specific location
+  const removeLocation = useCallback((index: number) => {
+    setSelectedLocations(prev => prev.filter((_, i) => i !== index));
   }, []);
 
   if (!apiKey) {
@@ -99,10 +120,40 @@ export default function MapView({ userLocation }: MapViewProps) {
   }
 
   console.log("Map component rendered with userLocation:", userLocation);
-  console.log("Selected location state:", selectedLocation);
+  console.log("Selected locations:", selectedLocations);
 
   return (
     <div className="h-full w-full relative">
+      {/* Control panel */}
+      <div className="absolute top-4 right-4 z-10 flex flex-col gap-2">
+        <div className="bg-white/80 backdrop-blur-sm rounded-md p-2 shadow-md">
+          <div className="flex items-center gap-2 mb-2">
+            <MapPin className="h-4 w-4 text-primary" />
+            <span className="text-sm font-medium">
+              {selectedLocations.length} location{selectedLocations.length !== 1 ? 's' : ''} selected
+            </span>
+          </div>
+          <Button 
+            size="sm" 
+            variant="destructive" 
+            className="w-full flex items-center gap-1"
+            onClick={clearAllLocations}
+            disabled={selectedLocations.length === 0}
+          >
+            <Trash2 className="h-3 w-3" />
+            Clear All
+          </Button>
+        </div>
+      </div>
+
+      {/* Remove location tooltip */}
+      {showRemoveTooltip && selectedLocations.length > 0 && (
+        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-black/75 text-white px-4 py-2 rounded-md shadow-lg animate-fade-in flex items-center gap-2">
+          <X className="h-4 w-4" />
+          <span className="text-sm">Click on any marker to remove it</span>
+        </div>
+      )}
+
       <GoogleMap
         mapContainerClassName="h-full w-full"
         center={mapCenter}
@@ -124,27 +175,27 @@ export default function MapView({ userLocation }: MapViewProps) {
           }}
         />
 
-        {/* Selected location marker */}
-        {selectedLocation && (
-          <Marker 
-            position={selectedLocation}
-            icon={{
-              url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-              scaledSize: new google.maps.Size(40, 40)
-            }}
-            options={{
-              zIndex: 1000, // Make sure marker is above other elements
-            }}
-          />
-        )}
+        {/* Multiple selected location markers with overlays */}
+        {selectedLocations.map((location, index) => (
+          <div key={`${location.lat}-${location.lng}-${index}`}>
+            <Marker 
+              position={location}
+              icon={{
+                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+                scaledSize: new google.maps.Size(40, 40)
+              }}
+              options={{
+                zIndex: 1000, // Make sure marker is above other elements
+              }}
+              onClick={() => removeLocation(index)}
+            />
 
-        {/* Display custom minimal overlay for weather and travel time */}
-        {selectedLocation && (
-          <MapOverlay
-            location={selectedLocation}
-            userLocation={userLocation}
-          />
-        )}
+            <MapOverlay
+              location={location}
+              userLocation={userLocation}
+            />
+          </div>
+        ))}
       </GoogleMap>
     </div>
   );
