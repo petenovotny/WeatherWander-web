@@ -131,7 +131,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
     <Card className="absolute bottom-4 left-4 w-96 bg-white/90 backdrop-blur">
       <CardContent className="p-4">
         {/* Show a notice when using mock data */}
-        {(weatherQuery.data as any).isMockData && (
+        {weather.isMockData && (
           <div className="mb-3 p-2 bg-amber-50 rounded-md flex items-center gap-2">
             <AlertTriangle className="h-4 w-4 text-amber-500" />
             <p className="text-xs text-amber-700">
