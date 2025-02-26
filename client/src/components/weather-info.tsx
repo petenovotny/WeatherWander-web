@@ -1,5 +1,4 @@
 import { useQuery } from "@tanstack/react-query";
-import { Card, CardContent } from "@/components/ui/card";
 import { Cloud, CloudRain, Sun, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 import type { Location, WeatherResponse, DistanceResponse } from "@shared/schema";
 
@@ -77,14 +76,12 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   if (weatherQuery.isLoading || distanceQuery.isLoading) {
     return (
-      <Card className="absolute bottom-4 left-4 w-96 z-50">
-        <CardContent className="p-4">
-          <div className="flex items-center space-x-2">
-            <Loader2 className="h-5 w-5 animate-spin" />
-            <p>Loading weather and travel info...</p>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+        <div className="flex items-center space-x-2">
+          <Loader2 className="h-4 w-4 animate-spin" />
+          <p className="text-xs">Loading info...</p>
+        </div>
+      </div>
     );
   }
 
@@ -99,26 +96,12 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
                          "Error loading data";
 
     return (
-      <Card className="absolute bottom-4 left-4 w-96 bg-red-50 z-50">
-        <CardContent className="p-4">
-          <div className="flex items-start space-x-2">
-            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
-            <div>
-              <p className="text-red-700 font-medium">Error</p>
-              <p className="text-red-600 text-sm mt-1">{errorMessage}</p>
-              <button 
-                onClick={() => {
-                  weatherQuery.refetch();
-                  distanceQuery.refetch();
-                }}
-                className="mt-2 text-xs bg-red-100 hover:bg-red-200 text-red-700 py-1 px-2 rounded transition-colors"
-              >
-                Try Again
-              </button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+        <div className="flex items-start space-x-2">
+          <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
+          <p className="text-xs text-red-600">{errorMessage}</p>
+        </div>
+      </div>
     );
   }
 
@@ -126,22 +109,18 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   if (!weatherQuery.data) {
     console.warn("Weather data is missing!");
     return (
-      <Card className="absolute bottom-4 left-4 w-96 z-50">
-        <CardContent className="p-4">
-          <p>Weather data unavailable</p>
-        </CardContent>
-      </Card>
+      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+        <p className="text-xs">Weather data unavailable</p>
+      </div>
     );
   }
 
   if (!distanceQuery.data) {
     console.warn("Distance data is missing!");
     return (
-      <Card className="absolute bottom-4 left-4 w-96 z-50">
-        <CardContent className="p-4">
-          <p>Travel time data unavailable</p>
-        </CardContent>
-      </Card>
+      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+        <p className="text-xs">Travel time data unavailable</p>
+      </div>
     );
   }
 
@@ -160,13 +139,9 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   if (!hasElements) {
     console.warn("Missing elements in distance data");
     return (
-      <Card className="absolute bottom-4 left-4 w-96 z-50">
-        <CardContent className="p-4">
-          <p className="text-destructive">
-            Could not calculate travel time: Missing data
-          </p>
-        </CardContent>
-      </Card>
+      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+        <p className="text-xs text-red-600">Could not calculate travel time</p>
+      </div>
     );
   }
 
@@ -174,61 +149,56 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   if (!element?.duration || element.status !== "OK") {
     return (
-      <Card className="absolute bottom-4 left-4 w-96 z-50">
-        <CardContent className="p-4">
-          <p className="text-destructive">
-            {element?.error_message || "Could not calculate travel time"}
-          </p>
-        </CardContent>
-      </Card>
+      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+        <p className="text-xs text-red-600">
+          {element?.error_message || "Could not calculate travel time"}
+        </p>
+      </div>
     );
   }
 
+  // Get the weather icon for the current weather
+  const currentWeather = weather.current.weather[0];
+  const WeatherIcon = weatherIcons[currentWeather.icon] || Cloud;
+
   return (
-    <Card className="absolute bottom-4 left-4 w-96 bg-white/90 backdrop-blur z-50">
-      <CardContent className="p-4">
-        {/* Show a notice when using mock data */}
-        {weather.isMockData && (
-          <div className="mb-3 p-2 bg-amber-50 rounded-md flex items-center gap-2">
-            <AlertTriangle className="h-4 w-4 text-amber-500" />
-            <p className="text-xs text-amber-700">
-              Using simulated weather data due to API connection issues
-            </p>
-          </div>
-        )}
-
-        <div className="mb-4">
-          <p className="text-sm text-muted-foreground">Drive time:</p>
-          <p className="text-lg font-semibold">{element.duration.text}</p>
+    <div className="absolute translate-y-[-120%] translate-x-[30%] bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 z-50 min-w-[200px]">
+      {weather.isMockData && (
+        <div className="mb-2 px-2 py-1 bg-amber-50 rounded-sm flex items-center gap-1">
+          <AlertTriangle className="h-3 w-3 text-amber-500" />
+          <p className="text-xs text-amber-700">Using simulated data</p>
         </div>
+      )}
 
-        <div className="grid grid-cols-4 gap-2">
-          {[
-            { temp: weather.current.temp, weather: weather.current.weather },
-            ...weather.daily.slice(0, 3)
-          ].map((day, i) => {
-            const WeatherIcon = weatherIcons[day.weather[0].icon] || Cloud;
+      <div className="flex justify-between items-center">
+        <div className="flex flex-col">
+          <p className="text-xs text-gray-500">Current Temperature</p>
+          <p className="text-lg font-semibold">{Math.round(weather.current.temp as number)}°C</p>
+          <p className="text-xs text-gray-500">{currentWeather.description}</p>
+        </div>
+        <WeatherIcon className="h-10 w-10 text-primary" />
+      </div>
+
+      <div className="mt-2 pt-2 border-t border-gray-100">
+        <p className="text-xs text-gray-500">Drive time from your location</p>
+        <p className="text-lg font-semibold">{element.duration.text}</p>
+      </div>
+
+      <div className="mt-2 pt-2 border-t border-gray-100">
+        <p className="text-xs text-gray-500 mb-1">3-Day Forecast</p>
+        <div className="grid grid-cols-3 gap-1">
+          {weather.daily.slice(1, 4).map((day, i) => {
+            const DayWeatherIcon = weatherIcons[day.weather[0].icon] || Cloud;
             return (
               <div key={i} className="text-center">
-                <p className="text-xs mb-1">{i === 0 ? "Now" : `Day ${i}`}</p>
-                <WeatherIcon className="h-6 w-6 mx-auto mb-1" />
-                {i === 0 ? (
-                  <p className="text-sm font-medium">{Math.round(day.temp as number)}°C</p>
-                ) : (
-                  <div>
-                    <p className="text-xs font-medium">
-                      {Math.round((day.temp as {max: number}).max)}°
-                    </p>
-                    <p className="text-xs text-muted-foreground">
-                      {Math.round((day.temp as {min: number}).min)}°
-                    </p>
-                  </div>
-                )}
+                <p className="text-xs">Day {i+1}</p>
+                <DayWeatherIcon className="h-5 w-5 mx-auto my-1" />
+                <p className="text-xs">{Math.round((day.temp as {max: number}).max)}°</p>
               </div>
             );
           })}
         </div>
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   );
 }

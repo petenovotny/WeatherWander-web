@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useMemo, useState, useRef } from "react";
 import { GoogleMap, useLoadScript, Marker } from "@react-google-maps/api";
 import WeatherInfo from "./weather-info";
 import type { Location } from "@shared/schema";
@@ -14,6 +14,7 @@ const libraries = ["places"] as const;
 export default function MapView({ userLocation }: MapViewProps) {
   const [selectedLocation, setSelectedLocation] = useState<Location | null>(null);
   const { toast } = useToast();
+  const mapRef = useRef<google.maps.Map | null>(null);
 
   const apiKey = import.meta.env.VITE_GOOGLE_MAPS_API_KEY ?? "";
 
@@ -40,6 +41,11 @@ export default function MapView({ userLocation }: MapViewProps) {
 
     console.log("Map clicked, setting location:", newLocation);
     setSelectedLocation(newLocation);
+  }, []);
+
+  // Handle map load event to store reference
+  const onMapLoad = useCallback((map: google.maps.Map) => {
+    mapRef.current = map;
   }, []);
 
   if (!apiKey) {
@@ -102,6 +108,7 @@ export default function MapView({ userLocation }: MapViewProps) {
         center={mapCenter}
         zoom={12}
         onClick={handleMapClick}
+        onLoad={onMapLoad}
         options={{
           disableDefaultUI: true,
           zoomControl: true,
@@ -119,28 +126,28 @@ export default function MapView({ userLocation }: MapViewProps) {
 
         {/* Selected location marker and info */}
         {selectedLocation && (
-          <>
+          <div>
             <Marker 
               position={selectedLocation}
               icon={{
                 url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
                 scaledSize: new google.maps.Size(40, 40)
               }}
-            />
-            <WeatherInfo 
-              location={selectedLocation}
-              userLocation={userLocation}
-            />
-          </>
+              options={{
+                zIndex: 1000, // Make sure marker is above other elements
+              }}
+            >
+              {/* Weather info displays above the marker */}
+              <div style={{position: 'relative'}}>
+                <WeatherInfo 
+                  location={selectedLocation}
+                  userLocation={userLocation}
+                />
+              </div>
+            </Marker>
+          </div>
         )}
       </GoogleMap>
-
-      {/* Debug overlay to verify data handling */}
-      {selectedLocation && (
-        <div className="absolute top-4 right-4 bg-white/90 p-2 rounded shadow text-xs">
-          <p>Selected: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}</p>
-        </div>
-      )}
     </div>
   );
 }
