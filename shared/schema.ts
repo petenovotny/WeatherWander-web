@@ -5,24 +5,33 @@ export const locationSchema = z.object({
   lng: z.number()
 });
 
+// Define a schema for daily weather temperature (min/max)
+const dailyTempSchema = z.object({
+  min: z.number(),
+  max: z.number()
+});
+
+// Define a schema for weather description
+const weatherDescriptionSchema = z.object({
+  icon: z.string(),
+  description: z.string()
+});
+
+// Define separate schemas for current and daily weather
+export const currentWeatherSchema = z.object({
+  temp: z.number(),
+  weather: z.array(weatherDescriptionSchema)
+});
+
+export const dailyWeatherSchema = z.object({
+  temp: dailyTempSchema,
+  weather: z.array(weatherDescriptionSchema)
+});
+
 export const weatherResponseSchema = z.object({
-  current: z.object({
-    temp: z.number(),
-    weather: z.array(z.object({
-      icon: z.string(),
-      description: z.string()
-    }))
-  }),
-  daily: z.array(z.object({
-    temp: z.object({
-      min: z.number(),
-      max: z.number()
-    }),
-    weather: z.array(z.object({
-      icon: z.string(),
-      description: z.string()
-    }))
-  }))
+  current: currentWeatherSchema,
+  daily: z.array(dailyWeatherSchema),
+  isMockData: z.boolean().optional()
 });
 
 export const distanceResponseSchema = z.object({
@@ -40,4 +49,6 @@ export const distanceResponseSchema = z.object({
 
 export type Location = z.infer<typeof locationSchema>;
 export type WeatherResponse = z.infer<typeof weatherResponseSchema>;
+export type CurrentWeather = z.infer<typeof currentWeatherSchema>;
+export type DailyWeather = z.infer<typeof dailyWeatherSchema>;
 export type DistanceResponse = z.infer<typeof distanceResponseSchema>;

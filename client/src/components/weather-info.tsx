@@ -156,14 +156,14 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
                 <p className="text-xs mb-1">{i === 0 ? "Now" : `Day ${i}`}</p>
                 <WeatherIcon className="h-6 w-6 mx-auto mb-1" />
                 {i === 0 ? (
-                  <p className="text-sm font-medium">{Math.round(day.temp)}°C</p>
+                  <p className="text-sm font-medium">{Math.round(day.temp as number)}°C</p>
                 ) : (
                   <div>
                     <p className="text-xs font-medium">
-                      {Math.round(day.temp.max)}°
+                      {Math.round((day.temp as {max: number}).max)}°
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {Math.round(day.temp.min)}°
+                      {Math.round((day.temp as {min: number}).min)}°
                     </p>
                   </div>
                 )}
