@@ -26,6 +26,11 @@ const weatherIcons: Record<string, any> = {
   "10n": CloudRain,
 };
 
+// Helper function to convert Celsius to Fahrenheit
+const toFahrenheit = (celsius: number): number => {
+  return Math.round((celsius * 9/5) + 32);
+};
+
 const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
   const weatherQuery = useQuery<WeatherResponse>({
     queryKey: ["/api/weather", location.lat, location.lng],
@@ -66,24 +71,21 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
   }
 
   const element = distance.rows[0].elements[0];
-  const currentWeather = weather.current.weather[0];
-  const WeatherIcon = weatherIcons[currentWeather.icon] || Cloud;
 
-  // Create an array for all days (current + next 3)
+  // Create an array for all days (today + next 3)
   const daysToShow = [
-    // Current day (using daily[0] for min/max)
+    // Today
     {
       label: 'Today',
-      temp: weather.current.temp as number,
-      low: (weather.daily[0].temp as {min: number}).min,
-      high: (weather.daily[0].temp as {max: number}).max,
-      icon: currentWeather.icon
+      low: toFahrenheit((weather.daily[0].temp as {min: number}).min),
+      high: toFahrenheit((weather.daily[0].temp as {max: number}).max),
+      icon: weather.daily[0].weather[0].icon
     },
     // Next 3 days
     ...weather.daily.slice(1, 4).map((day, i) => ({
       label: `+${i+1}d`,
-      low: (day.temp as {min: number}).min,
-      high: (day.temp as {max: number}).max,
+      low: toFahrenheit((day.temp as {min: number}).min),
+      high: toFahrenheit((day.temp as {max: number}).high),
       icon: day.weather[0].icon
     }))
   ];
@@ -102,53 +104,33 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
         display: 'flex', 
         flexDirection: 'column',
         alignItems: 'center', 
-        gap: '4px',
+        gap: '2px',
         background: 'transparent'
       }}>
-        {/* Top row: Current temperature and travel time */}
-        <div style={{
-          display: 'flex',
-          alignItems: 'center',
-          gap: '6px'
+        {/* Compact travel time pill */}
+        <span style={{ 
+          display: 'flex', 
+          alignItems: 'center', 
+          backgroundColor: 'rgba(255, 255, 255, 0.6)', 
+          padding: '2px 6px', 
+          borderRadius: '12px',
+          fontSize: '11px',
+          fontWeight: '500',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
         }}>
-          <span style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            backgroundColor: 'rgba(255, 255, 255, 0.85)', 
-            padding: '4px 8px', 
-            borderRadius: '16px',
-            fontSize: '13px',
-            fontWeight: '500',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-          }}>
-            <WeatherIcon size={14} className="text-blue-500 mr-1" />
-            {Math.round(weather.current.temp as number)}°C
-          </span>
+          <Clock size={10} style={{ marginRight: '3px', color: '#4b5563' }} />
+          {element.duration.text}
+        </span>
 
-          <span style={{ 
-            display: 'flex', 
-            alignItems: 'center', 
-            backgroundColor: 'rgba(255, 255, 255, 0.85)', 
-            padding: '4px 8px', 
-            borderRadius: '16px',
-            fontSize: '13px',
-            fontWeight: '500',
-            boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
-          }}>
-            <Clock size={14} className="text-gray-600 mr-1" />
-            {element.duration.text}
-          </span>
-        </div>
-
-        {/* Row 2: Temperature forecast */}
+        {/* Ultra-compact forecast */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '4px',
-          backgroundColor: 'rgba(255, 255, 255, 0.85)',
-          padding: '4px 8px',
-          borderRadius: '16px',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+          gap: '3px',
+          backgroundColor: 'rgba(255, 255, 255, 0.6)',
+          padding: '2px 6px',
+          borderRadius: '12px',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
         }}>
           {daysToShow.map((day, i) => {
             const DayIcon = weatherIcons[day.icon] || Cloud;
@@ -157,21 +139,15 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                padding: '0 4px',
+                padding: '0 2px',
                 borderRight: i < daysToShow.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none',
-                fontSize: '10px'
+                fontSize: '8px'
               }}>
-                <span style={{ fontSize: '9px', color: '#666' }}>{day.label}</span>
-                <DayIcon size={12} style={{ margin: '2px 0' }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                  <span style={{ display: 'flex', alignItems: 'center', color: '#2563eb' }}>
-                    <ThermometerSnowflake size={8} style={{ marginRight: '1px' }} />
-                    {Math.round(day.low)}°
-                  </span>
-                  <span style={{ display: 'flex', alignItems: 'center', color: '#dc2626' }}>
-                    <ThermometerSun size={8} style={{ marginRight: '1px' }} />
-                    {Math.round(day.high)}°
-                  </span>
+                <span style={{ fontSize: '7px', color: '#4b5563' }}>{day.label}</span>
+                <DayIcon size={10} style={{ margin: '1px 0' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '2px' }}>
+                  <span style={{ color: '#1d4ed8', fontSize: '7px' }}>{day.low}°</span>
+                  <span style={{ color: '#b91c1c', fontSize: '7px' }}>{day.high}°</span>
                 </div>
               </div>
             );
