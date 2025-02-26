@@ -104,7 +104,7 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
         display: 'flex', 
         flexDirection: 'column',
         alignItems: 'center', 
-        gap: '4px',
+        gap: '3px',
         background: 'transparent'
       }}>
         {/* Compact travel time pill */}
@@ -112,13 +112,13 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
           display: 'flex', 
           alignItems: 'center', 
           backgroundColor: 'rgba(255, 255, 255, 0.6)', 
-          padding: '4px 8px', 
+          padding: '3px 6px', 
           borderRadius: '14px',
-          fontSize: '12px',
+          fontSize: '11px',
           fontWeight: '500',
           boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
         }}>
-          <Clock size={12} style={{ marginRight: '4px', color: '#4b5563' }} />
+          <Clock size={10} style={{ marginRight: '3px', color: '#4b5563' }} />
           {element.duration.text}
         </span>
 
@@ -126,9 +126,9 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '6px',
+          gap: '4px',
           backgroundColor: 'rgba(255, 255, 255, 0.6)',
-          padding: '4px 10px',
+          padding: '3px 6px',
           borderRadius: '14px',
           boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
         }}>
@@ -139,13 +139,13 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                padding: '0 5px',
+                padding: '0 3px',
                 borderRight: i < daysToShow.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none',
                 fontSize: '10px'
               }}>
-                <span style={{ fontSize: '9px', color: '#4b5563', fontWeight: '500' }}>{day.label}</span>
-                <DayIcon size={14} style={{ margin: '2px 0' }} />
-                <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                <span style={{ fontSize: '8px', color: '#4b5563', fontWeight: '500' }}>{day.label}</span>
+                <DayIcon size={12} style={{ margin: '1px 0' }} />
+                <div style={{ display: 'flex', alignItems: 'center', gap: '3px' }}>
                   <span style={{ color: '#1d4ed8', fontSize: '9px', fontWeight: '500' }}>{day.low}°</span>
                   <span style={{ color: '#b91c1c', fontSize: '9px', fontWeight: '500' }}>{day.high}°</span>
                 </div>
