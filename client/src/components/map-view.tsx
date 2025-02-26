@@ -1,5 +1,5 @@
 import { useCallback, useMemo, useState, useRef } from "react";
-import { GoogleMap, useLoadScript, Marker } from "@react-google-maps/api";
+import { GoogleMap, useLoadScript, Marker, InfoWindow } from "@react-google-maps/api";
 import WeatherInfo from "./weather-info";
 import type { Location } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
@@ -137,17 +137,23 @@ export default function MapView({ userLocation }: MapViewProps) {
             }}
           />
         )}
-      </GoogleMap>
 
-      {/* Weather info - positioned directly below the marker */}
-      {selectedLocation && (
-        <div className="absolute left-[50%] top-[50%] transform -translate-x-1/2 translate-y-4 z-[9999]">
-          <WeatherInfo 
-            location={selectedLocation}
-            userLocation={userLocation}
-          />
-        </div>
-      )}
+        {/* Info Window for weather and travel time */}
+        {selectedLocation && (
+          <InfoWindow
+            position={selectedLocation}
+            options={{
+              pixelOffset: new google.maps.Size(0, -5),
+              disableAutoPan: false
+            }}
+          >
+            <WeatherInfo 
+              location={selectedLocation}
+              userLocation={userLocation}
+            />
+          </InfoWindow>
+        )}
+      </GoogleMap>
     </div>
   );
 }

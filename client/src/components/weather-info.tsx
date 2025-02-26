@@ -162,47 +162,36 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   const WeatherIcon = weatherIcons[currentWeather.icon] || Cloud;
 
   return (
-    <div className="relative">
-      {/* Triangle pointer at the top */}
-      <div className="absolute left-1/2 -top-2 transform -translate-x-1/2 w-0 h-0 border-l-[8px] border-r-[8px] border-b-[8px] border-l-transparent border-r-transparent border-b-white/95"></div>
-
-      {/* Main content */}
-      <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-2 text-center min-w-[180px] max-w-[220px]">
-        {weather.isMockData && (
-          <div className="mb-1 px-1 py-0.5 bg-amber-50 rounded-sm flex items-center justify-center gap-1">
-            <AlertTriangle className="h-2 w-2 text-amber-500" />
-            <p className="text-[10px] text-amber-700">Simulated weather data</p>
-          </div>
-        )}
-
-        <div className="flex justify-between items-center px-2">
-          <div className="flex flex-col items-start">
-            <p className="text-xs text-gray-500">Now</p>
-            <p className="text-base font-semibold">{Math.round(weather.current.temp as number)}°C</p>
-            <p className="text-[10px] text-gray-500">{currentWeather.description}</p>
-          </div>
-          <WeatherIcon className="h-8 w-8 text-primary" />
+    <div className="bg-white/95 backdrop-blur-sm p-2 min-w-[160px] max-w-[180px] text-center">
+      {weather.isMockData && (
+        <div className="flex items-center justify-center gap-1 mb-1">
+          <AlertTriangle className="h-2 w-2 text-amber-500" />
+          <p className="text-[10px] text-amber-700">Simulated data</p>
         </div>
+      )}
 
-        <div className="mt-1 pt-1 border-t border-gray-100 px-2">
-          <p className="text-xs text-gray-500">Drive time</p>
-          <p className="text-sm font-medium">{element.duration.text}</p>
-        </div>
+      <div className="flex items-center justify-center gap-2">
+        <WeatherIcon className="h-5 w-5 text-primary" />
+        <p className="text-base font-semibold">{Math.round(weather.current.temp as number)}°C</p>
+      </div>
+      <p className="text-[10px] text-gray-500 mb-1">{currentWeather.description}</p>
 
-        <div className="mt-1 pt-1 border-t border-gray-100">
-          <div className="flex justify-between px-1">
-            {weather.daily.slice(1, 4).map((day, i) => {
-              const DayWeatherIcon = weatherIcons[day.weather[0].icon] || Cloud;
-              return (
-                <div key={i} className="text-center">
-                  <p className="text-[10px] text-gray-500">Day {i+1}</p>
-                  <DayWeatherIcon className="h-4 w-4 mx-auto my-0.5" />
-                  <p className="text-[10px]">{Math.round((day.temp as {max: number}).max)}°</p>
-                </div>
-              );
-            })}
-          </div>
-        </div>
+      <div className="flex items-center justify-center gap-1">
+        <p className="text-xs">Travel time:</p>
+        <p className="text-sm font-semibold">{element.duration.text}</p>
+      </div>
+
+      <div className="flex justify-around mt-1 pt-1 border-t border-gray-100">
+        {weather.daily.slice(1, 4).map((day, i) => {
+          const DayWeatherIcon = weatherIcons[day.weather[0].icon] || Cloud;
+          return (
+            <div key={i} className="text-center">
+              <p className="text-[9px] text-gray-500">+{i+1}d</p>
+              <DayWeatherIcon className="h-3 w-3 mx-auto my-0.5" />
+              <p className="text-[9px]">{Math.round((day.temp as {max: number}).max)}°</p>
+            </div>
+          );
+        })}
       </div>
     </div>
   );
