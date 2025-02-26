@@ -157,7 +157,7 @@ export default function MapView({ userLocation }: MapViewProps) {
       <GoogleMap
         mapContainerClassName="h-full w-full"
         center={mapCenter}
-        zoom={8} 
+        zoom={6} 
         onClick={handleMapClick}
         onLoad={onMapLoad}
         options={{
