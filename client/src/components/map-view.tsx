@@ -33,10 +33,13 @@ export default function MapView({ userLocation }: MapViewProps) {
   const handleMapClick = useCallback((e: google.maps.MapMouseEvent) => {
     if (!e.latLng) return;
 
-    setSelectedLocation({
+    const newLocation = {
       lat: e.latLng.lat(),
       lng: e.latLng.lng()
-    });
+    };
+
+    console.log("Map clicked, setting location:", newLocation);
+    setSelectedLocation(newLocation);
   }, []);
 
   if (!apiKey) {
@@ -89,6 +92,9 @@ export default function MapView({ userLocation }: MapViewProps) {
     );
   }
 
+  console.log("Map component rendered with userLocation:", userLocation);
+  console.log("Selected location state:", selectedLocation);
+
   return (
     <div className="h-full w-full relative">
       <GoogleMap
@@ -102,6 +108,7 @@ export default function MapView({ userLocation }: MapViewProps) {
           styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }]
         }}
       >
+        {/* User's current location marker */}
         <Marker 
           position={userLocation}
           icon={{
@@ -109,6 +116,8 @@ export default function MapView({ userLocation }: MapViewProps) {
             scaledSize: new google.maps.Size(40, 40)
           }}
         />
+
+        {/* Selected location marker and info */}
         {selectedLocation && (
           <>
             <Marker 
@@ -125,6 +134,13 @@ export default function MapView({ userLocation }: MapViewProps) {
           </>
         )}
       </GoogleMap>
+
+      {/* Debug overlay to verify data handling */}
+      {selectedLocation && (
+        <div className="absolute top-4 right-4 bg-white/90 p-2 rounded shadow text-xs">
+          <p>Selected: {selectedLocation.lat.toFixed(6)}, {selectedLocation.lng.toFixed(6)}</p>
+        </div>
+      )}
     </div>
   );
 }

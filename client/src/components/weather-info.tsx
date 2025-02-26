@@ -60,6 +60,21 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
     },
   });
 
+  // Add detailed logging for debugging
+  console.log("Weather query state:", {
+    isLoading: weatherQuery.isLoading,
+    isError: weatherQuery.isError,
+    data: weatherQuery.data,
+    error: weatherQuery.error
+  });
+
+  console.log("Distance query state:", {
+    isLoading: distanceQuery.isLoading,
+    isError: distanceQuery.isError,
+    data: distanceQuery.data,
+    error: distanceQuery.error
+  });
+
   if (weatherQuery.isLoading || distanceQuery.isLoading) {
     return (
       <Card className="absolute bottom-4 left-4 w-96">
@@ -107,13 +122,55 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
     );
   }
 
-  if (!weatherQuery.data || !distanceQuery.data) {
-    return null;
+  // Add a more explicit check for data existence
+  if (!weatherQuery.data) {
+    console.warn("Weather data is missing!");
+    return (
+      <Card className="absolute bottom-4 left-4 w-96">
+        <CardContent className="p-4">
+          <p>Weather data unavailable</p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (!distanceQuery.data) {
+    console.warn("Distance data is missing!");
+    return (
+      <Card className="absolute bottom-4 left-4 w-96">
+        <CardContent className="p-4">
+          <p>Travel time data unavailable</p>
+        </CardContent>
+      </Card>
+    );
   }
 
   const weather = weatherQuery.data;
   const distance = distanceQuery.data;
-  const element = distance.rows[0]?.elements[0];
+
+  // Debug the element access
+  console.log("Distance data structure:", JSON.stringify(distance));
+
+  // Check if the required elements exist
+  const hasElements = distance.rows && 
+                    distance.rows.length > 0 && 
+                    distance.rows[0].elements && 
+                    distance.rows[0].elements.length > 0;
+
+  if (!hasElements) {
+    console.warn("Missing elements in distance data");
+    return (
+      <Card className="absolute bottom-4 left-4 w-96">
+        <CardContent className="p-4">
+          <p className="text-destructive">
+            Could not calculate travel time: Missing data
+          </p>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  const element = distance.rows[0].elements[0];
 
   if (!element?.duration || element.status !== "OK") {
     return (
