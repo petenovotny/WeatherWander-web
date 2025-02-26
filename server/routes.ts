@@ -63,14 +63,41 @@ export async function registerRoutes(app: Express) {
         throw new Error("OpenWeatherMap API key is not configured");
       }
 
-      const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lng}&exclude=minutely,hourly,alerts&units=metric&appid=${WEATHER_API_KEY}`;
-      console.log("Calling Weather API:", url.replace(WEATHER_API_KEY, 'HIDDEN'));
+      // Using the free "Current Weather Data" API endpoint instead of OneCall API
+      const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=metric&appid=${WEATHER_API_KEY}`;
+      console.log("Calling Current Weather API:", currentWeatherUrl.replace(WEATHER_API_KEY, 'HIDDEN'));
+
+      // Get the 5-day forecast (also available in free tier)
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lng}&units=metric&cnt=5&appid=${WEATHER_API_KEY}`;
+      console.log("Calling Forecast API:", forecastUrl.replace(WEATHER_API_KEY, 'HIDDEN'));
 
       try {
-        const response = await axios.get(url);
-        console.log('Weather API Raw Response:', response.data);
+        // Make both API calls in parallel
+        const [currentResponse, forecastResponse] = await Promise.all([
+          axios.get(currentWeatherUrl),
+          axios.get(forecastUrl)
+        ]);
 
-        const weather = weatherResponseSchema.parse(response.data);
+        console.log('Current Weather API Raw Response:', currentResponse.data);
+        console.log('Forecast API Raw Response:', forecastResponse.data);
+
+        // Transform the response to match our schema
+        const transformedData = {
+          current: {
+            temp: currentResponse.data.main.temp,
+            weather: currentResponse.data.weather
+          },
+          daily: forecastResponse.data.list.map((item: any) => ({
+            temp: {
+              min: item.main.temp_min,
+              max: item.main.temp_max
+            },
+            weather: item.weather
+          }))
+        };
+
+        // Parse with our schema to validate
+        const weather = weatherResponseSchema.parse(transformedData);
         console.log('Parsed Weather Response:', weather);
 
         res.json(weather);

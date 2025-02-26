@@ -130,10 +130,10 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
                 ) : (
                   <div>
                     <p className="text-xs font-medium">
-                      {Math.round(typeof day.temp === "number" ? day.temp : day.temp.max)}°
+                      {Math.round(day.temp.max)}°
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      {Math.round(typeof day.temp === "number" ? day.temp : day.temp.min)}°
+                      {Math.round(day.temp.min)}°
                     </p>
                   </div>
                 )}
