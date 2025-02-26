@@ -138,7 +138,7 @@ export default function MapView({ userLocation }: MapViewProps) {
           />
         )}
 
-        {/* Info Window for weather and travel time */}
+        {/* Weather info displayed at the clicked location */}
         {selectedLocation && (
           <InfoWindow
             position={selectedLocation}
