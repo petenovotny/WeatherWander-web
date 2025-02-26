@@ -133,9 +133,9 @@ export default function MapView({ userLocation }: MapViewProps) {
               {selectedLocations.length} location{selectedLocations.length !== 1 ? 's' : ''} selected
             </span>
           </div>
-          <Button 
-            size="sm" 
-            variant="destructive" 
+          <Button
+            size="sm"
+            variant="destructive"
             className="w-full flex items-center gap-1"
             onClick={clearAllLocations}
             disabled={selectedLocations.length === 0}
@@ -157,7 +157,7 @@ export default function MapView({ userLocation }: MapViewProps) {
       <GoogleMap
         mapContainerClassName="h-full w-full"
         center={mapCenter}
-        zoom={6} 
+        zoom={7}
         onClick={handleMapClick}
         onLoad={onMapLoad}
         options={{
@@ -167,7 +167,7 @@ export default function MapView({ userLocation }: MapViewProps) {
         }}
       >
         {/* User's current location marker */}
-        <Marker 
+        <Marker
           position={userLocation}
           icon={{
             url: "http://maps.google.com/mapfiles/ms/icons/red-dot.png",
@@ -178,14 +178,14 @@ export default function MapView({ userLocation }: MapViewProps) {
         {/* Multiple selected location markers with overlays */}
         {selectedLocations.map((location, index) => (
           <div key={`${location.lat}-${location.lng}-${index}`}>
-            <Marker 
+            <Marker
               position={location}
               icon={{
                 url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
                 scaledSize: new google.maps.Size(40, 40)
               }}
               options={{
-                zIndex: 1000, 
+                zIndex: 1000,
               }}
               onClick={() => removeLocation(index)}
             />
