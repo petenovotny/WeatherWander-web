@@ -126,28 +126,28 @@ export default function MapView({ userLocation }: MapViewProps) {
 
         {/* Selected location marker and info */}
         {selectedLocation && (
-          <div>
-            <Marker 
-              position={selectedLocation}
-              icon={{
-                url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
-                scaledSize: new google.maps.Size(40, 40)
-              }}
-              options={{
-                zIndex: 1000, // Make sure marker is above other elements
-              }}
-            >
-              {/* Weather info displays above the marker */}
-              <div style={{position: 'relative'}}>
-                <WeatherInfo 
-                  location={selectedLocation}
-                  userLocation={userLocation}
-                />
-              </div>
-            </Marker>
-          </div>
+          <Marker 
+            position={selectedLocation}
+            icon={{
+              url: "http://maps.google.com/mapfiles/ms/icons/blue-dot.png",
+              scaledSize: new google.maps.Size(40, 40)
+            }}
+            options={{
+              zIndex: 1000, // Make sure marker is above other elements
+            }}
+          />
         )}
       </GoogleMap>
+
+      {/* Weather info card - positioned outside the map but overlaid */}
+      {selectedLocation && (
+        <div className="absolute top-1/4 left-1/4 transform -translate-x-1/2 -translate-y-full z-[9999]">
+          <WeatherInfo 
+            location={selectedLocation}
+            userLocation={userLocation}
+          />
+        </div>
+      )}
     </div>
   );
 }

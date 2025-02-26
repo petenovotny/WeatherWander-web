@@ -76,7 +76,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   if (weatherQuery.isLoading || distanceQuery.isLoading) {
     return (
-      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+      <div className="bg-white shadow-lg rounded-md p-2 z-50">
         <div className="flex items-center space-x-2">
           <Loader2 className="h-4 w-4 animate-spin" />
           <p className="text-xs">Loading info...</p>
@@ -96,7 +96,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
                          "Error loading data";
 
     return (
-      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+      <div className="bg-white shadow-lg rounded-md p-2 z-50">
         <div className="flex items-start space-x-2">
           <AlertCircle className="h-4 w-4 text-red-500 flex-shrink-0" />
           <p className="text-xs text-red-600">{errorMessage}</p>
@@ -109,7 +109,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   if (!weatherQuery.data) {
     console.warn("Weather data is missing!");
     return (
-      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+      <div className="bg-white shadow-lg rounded-md p-2 z-50">
         <p className="text-xs">Weather data unavailable</p>
       </div>
     );
@@ -118,7 +118,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   if (!distanceQuery.data) {
     console.warn("Distance data is missing!");
     return (
-      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+      <div className="bg-white shadow-lg rounded-md p-2 z-50">
         <p className="text-xs">Travel time data unavailable</p>
       </div>
     );
@@ -139,7 +139,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   if (!hasElements) {
     console.warn("Missing elements in distance data");
     return (
-      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+      <div className="bg-white shadow-lg rounded-md p-2 z-50">
         <p className="text-xs text-red-600">Could not calculate travel time</p>
       </div>
     );
@@ -149,7 +149,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   if (!element?.duration || element.status !== "OK") {
     return (
-      <div className="absolute translate-y-[-100%] translate-x-[50%] bg-white shadow-lg rounded-md p-2 z-50">
+      <div className="bg-white shadow-lg rounded-md p-2 z-50">
         <p className="text-xs text-red-600">
           {element?.error_message || "Could not calculate travel time"}
         </p>
@@ -162,7 +162,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   const WeatherIcon = weatherIcons[currentWeather.icon] || Cloud;
 
   return (
-    <div className="absolute translate-y-[-120%] translate-x-[30%] bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 z-50 min-w-[200px]">
+    <div className="bg-white/95 backdrop-blur-sm shadow-lg rounded-md p-3 z-50 min-w-[200px]">
       {weather.isMockData && (
         <div className="mb-2 px-2 py-1 bg-amber-50 rounded-sm flex items-center gap-1">
           <AlertTriangle className="h-3 w-3 text-amber-500" />
