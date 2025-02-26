@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { Cloud, CloudRain, Sun, Loader2, AlertCircle } from "lucide-react";
+import { Cloud, CloudRain, Sun, Loader2, AlertCircle, AlertTriangle } from "lucide-react";
 import type { Location, WeatherResponse, DistanceResponse } from "@shared/schema";
 
 interface WeatherInfoProps {
@@ -24,7 +24,7 @@ const weatherIcons: Record<string, any> = {
 };
 
 export default function WeatherInfo({ location, userLocation }: WeatherInfoProps) {
-  const weatherQuery = useQuery<WeatherResponse>({
+  const weatherQuery = useQuery<WeatherResponse & { isMockData?: boolean }>({
     queryKey: ["/api/weather", location.lat, location.lng],
     queryFn: async () => {
       console.log("Fetching weather for location:", location);
@@ -130,6 +130,16 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   return (
     <Card className="absolute bottom-4 left-4 w-96 bg-white/90 backdrop-blur">
       <CardContent className="p-4">
+        {/* Show a notice when using mock data */}
+        {(weatherQuery.data as any).isMockData && (
+          <div className="mb-3 p-2 bg-amber-50 rounded-md flex items-center gap-2">
+            <AlertTriangle className="h-4 w-4 text-amber-500" />
+            <p className="text-xs text-amber-700">
+              Using simulated weather data due to API connection issues
+            </p>
+          </div>
+        )}
+
         <div className="mb-4">
           <p className="text-sm text-muted-foreground">Drive time:</p>
           <p className="text-lg font-semibold">{element.duration.text}</p>

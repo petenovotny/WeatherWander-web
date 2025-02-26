@@ -49,6 +49,73 @@ function signGoogleMapsUrl(url: string): string {
   }
 }
 
+/**
+ * Generate mock weather data for development and testing
+ * Used as fallback when API key is invalid or unavailable
+ */
+function generateMockWeatherData(lat: number, lng: number): any {
+  // Generate deterministic but varying temperature based on coordinates
+  const baseTemp = 20; // Base temperature in Celsius
+  const tempVariation = (Math.sin(lat * lng * 0.01) * 10).toFixed(1);
+  const currentTemp = parseFloat((baseTemp + parseFloat(tempVariation)).toFixed(1));
+
+  // Generate mock weather conditions based on temperature
+  let condition = "clear";
+  let icon = "01d";
+
+  if (currentTemp < 15) {
+    condition = "clouds";
+    icon = "03d";
+  } else if (currentTemp > 25) {
+    condition = "clear";
+    icon = "01d";
+  } else {
+    condition = "few clouds";
+    icon = "02d";
+  }
+
+  return {
+    current: {
+      temp: currentTemp,
+      weather: [
+        {
+          icon: icon,
+          description: condition
+        }
+      ]
+    },
+    daily: [
+      // Today
+      {
+        temp: {
+          min: currentTemp - 5,
+          max: currentTemp + 3
+        },
+        weather: [
+          {
+            icon: icon,
+            description: condition
+          }
+        ]
+      },
+      // Next 3 days with some variations
+      ...[1, 2, 3].map(day => ({
+        temp: {
+          min: currentTemp - 5 + (day * 0.8),
+          max: currentTemp + 3 + (day * 0.6)
+        },
+        weather: [
+          {
+            icon: icon,
+            description: condition
+          }
+        ]
+      }))
+    ],
+    isMockData: true
+  };
+}
+
 export async function registerRoutes(app: Express) {
   app.get("/api/weather", async (req, res) => {
     try {
@@ -118,19 +185,26 @@ export async function registerRoutes(app: Express) {
           console.error("Response headers:", apiError.response.headers);
           console.error("Response data:", apiError.response.data);
 
-          if (status === 401) {
-            throw new Error(`Invalid or expired OpenWeatherMap API key (${maskedKey}). Please verify your API key.`);
-          } else if (status === 429) {
-            throw new Error("OpenWeatherMap API rate limit exceeded. Please try again later.");
-          } else {
-            throw new Error(`OpenWeatherMap API error: ${status} - ${apiError.response.data.message || "Unknown error"}`);
-          }
+          // Log detailed error message but use mock data as fallback
+          console.warn(`Weather API error (${status}). Using mock data instead.`);
+
+          // Generate and return mock weather data
+          const mockData = generateMockWeatherData(lat, lng);
+          return res.json(mockData);
         } else if (apiError.request) {
           console.error("No response received from OpenWeatherMap API");
-          throw new Error("Could not connect to the weather service. Please check your internet connection and try again.");
+
+          // Network error - generate and return mock data
+          console.warn("Weather API network error. Using mock data instead.");
+          const mockData = generateMockWeatherData(lat, lng);
+          return res.json(mockData);
         } else {
           console.error("Error setting up the request:", apiError.message);
-          throw new Error(`Failed to make weather request: ${apiError.message}`);
+
+          // Setup error - generate and return mock data
+          console.warn("Weather API setup error. Using mock data instead.");
+          const mockData = generateMockWeatherData(lat, lng);
+          return res.json(mockData);
         }
       }
     } catch (error) {
