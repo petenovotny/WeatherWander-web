@@ -157,7 +157,7 @@ export default function MapView({ userLocation }: MapViewProps) {
       <GoogleMap
         mapContainerClassName="h-full w-full"
         center={mapCenter}
-        zoom={10} // Changed from 12 to 10 to zoom out 4x
+        zoom={8} 
         onClick={handleMapClick}
         onLoad={onMapLoad}
         options={{
@@ -185,7 +185,7 @@ export default function MapView({ userLocation }: MapViewProps) {
                 scaledSize: new google.maps.Size(40, 40)
               }}
               options={{
-                zIndex: 1000, // Make sure marker is above other elements
+                zIndex: 1000, 
               }}
               onClick={() => removeLocation(index)}
             />
