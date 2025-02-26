@@ -1,6 +1,6 @@
 import { useCallback, useMemo, useState, useRef } from "react";
-import { GoogleMap, useLoadScript, Marker, InfoWindow } from "@react-google-maps/api";
-import WeatherInfo from "./weather-info";
+import { GoogleMap, useLoadScript, Marker } from "@react-google-maps/api";
+import MapOverlay from "./MapOverlay";
 import type { Location } from "@shared/schema";
 import { useToast } from "@/hooks/use-toast";
 
@@ -138,20 +138,12 @@ export default function MapView({ userLocation }: MapViewProps) {
           />
         )}
 
-        {/* Weather info displayed at the clicked location */}
+        {/* Display custom minimal overlay for weather and travel time */}
         {selectedLocation && (
-          <InfoWindow
-            position={selectedLocation}
-            options={{
-              pixelOffset: new google.maps.Size(0, -5),
-              disableAutoPan: false
-            }}
-          >
-            <WeatherInfo 
-              location={selectedLocation}
-              userLocation={userLocation}
-            />
-          </InfoWindow>
+          <MapOverlay
+            location={selectedLocation}
+            userLocation={userLocation}
+          />
         )}
       </GoogleMap>
     </div>
