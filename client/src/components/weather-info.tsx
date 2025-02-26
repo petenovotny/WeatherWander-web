@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent } from "@/components/ui/card";
-import { Cloud, CloudRain, Sun, Loader2 } from "lucide-react";
+import { Cloud, CloudRain, Sun, Loader2, AlertCircle } from "lucide-react";
 import type { Location, WeatherResponse, DistanceResponse } from "@shared/schema";
 
 interface WeatherInfoProps {
@@ -30,8 +30,10 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
       console.log("Fetching weather for location:", location);
       const response = await fetch(`/api/weather?lat=${location.lat}&lng=${location.lng}`);
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to fetch weather data");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Error ${response.status}: Failed to fetch weather data`;
+        console.error("Weather API error:", errorMessage);
+        throw new Error(errorMessage);
       }
       const data = await response.json();
       console.log("Weather API response:", data);
@@ -47,8 +49,10 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
         `/api/distance?origin[lat]=${userLocation.lat}&origin[lng]=${userLocation.lng}&destination[lat]=${location.lat}&destination[lng]=${location.lng}`
       );
       if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.error || "Failed to calculate travel time");
+        const errorData = await response.json().catch(() => ({}));
+        const errorMessage = errorData.error || `Error ${response.status}: Failed to calculate travel time`;
+        console.error("Distance API error:", errorMessage);
+        throw new Error(errorMessage);
       }
       const data = await response.json();
       console.log("Distance API response:", data);
@@ -74,14 +78,30 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
       weatherError: weatherQuery.error,
       distanceError: distanceQuery.error
     });
+
+    const errorMessage = (weatherQuery.error as Error)?.message || 
+                         (distanceQuery.error as Error)?.message || 
+                         "Error loading data";
+
     return (
-      <Card className="absolute bottom-4 left-4 w-96">
+      <Card className="absolute bottom-4 left-4 w-96 bg-red-50">
         <CardContent className="p-4">
-          <p className="text-destructive">
-            {(weatherQuery.error as Error)?.message || 
-             (distanceQuery.error as Error)?.message || 
-             "Error loading data"}
-          </p>
+          <div className="flex items-start space-x-2">
+            <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-red-700 font-medium">Error</p>
+              <p className="text-red-600 text-sm mt-1">{errorMessage}</p>
+              <button 
+                onClick={() => {
+                  weatherQuery.refetch();
+                  distanceQuery.refetch();
+                }}
+                className="mt-2 text-xs bg-red-100 hover:bg-red-200 text-red-700 py-1 px-2 rounded transition-colors"
+              >
+                Try Again
+              </button>
+            </div>
+          </div>
         </CardContent>
       </Card>
     );
