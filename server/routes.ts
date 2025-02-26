@@ -3,9 +3,51 @@ import { createServer } from "http";
 import axios from "axios";
 import { locationSchema, weatherResponseSchema, distanceResponseSchema } from "@shared/schema";
 import { z } from "zod";
+import * as CryptoJS from 'crypto-js';
 
 const WEATHER_API_KEY = process.env.OPENWEATHERMAP_API_KEY || "default_key";
 const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "default_key";
+const GOOGLE_MAPS_SIGNING_SECRET = process.env.GOOGLE_MAPS_SIGNING_SECRET || "";
+
+/**
+ * Signs a URL with the Google Maps signing secret
+ * @param url The URL to sign
+ * @returns The signed URL with signature parameter
+ */
+function signGoogleMapsUrl(url: string): string {
+  if (!GOOGLE_MAPS_SIGNING_SECRET) {
+    console.warn("Google Maps signing secret not configured, using unsigned URL");
+    return url;
+  }
+
+  try {
+    // Remove any existing signature and API key from the URL for signing
+    const urlWithoutKey = url.split('&key=')[0];
+
+    // Create the URL signing component (the path + query, without protocol and host)
+    const urlToSign = new URL(urlWithoutKey);
+    const pathWithQuery = urlToSign.pathname + urlToSign.search;
+
+    // Decode the base64 signing key (the client secret)
+    const key = CryptoJS.enc.Base64.parse(GOOGLE_MAPS_SIGNING_SECRET);
+
+    // Create the signature using HMAC-SHA1
+    const signature = CryptoJS.HmacSHA1(pathWithQuery, key);
+    const encodedSignature = signature.toString(CryptoJS.enc.Base64);
+
+    // Replace any characters that cannot be included in a URL
+    const safeSignature = encodedSignature
+      .replace(/\+/g, '-')
+      .replace(/\//g, '_')
+      .replace(/=+$/, '');
+
+    // Add the signature and API key to the URL
+    return `${url}&signature=${safeSignature}`;
+  } catch (error) {
+    console.error("Error signing Google Maps URL:", error);
+    return url; // Return the original URL if signing fails
+  }
+}
 
 export async function registerRoutes(app: Express) {
   app.get("/api/weather", async (req, res) => {
@@ -24,13 +66,28 @@ export async function registerRoutes(app: Express) {
       const url = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lng}&exclude=minutely,hourly,alerts&units=metric&appid=${WEATHER_API_KEY}`;
       console.log("Calling Weather API:", url.replace(WEATHER_API_KEY, 'HIDDEN'));
 
-      const response = await axios.get(url);
-      console.log('Weather API Raw Response:', response.data);
+      try {
+        const response = await axios.get(url);
+        console.log('Weather API Raw Response:', response.data);
 
-      const weather = weatherResponseSchema.parse(response.data);
-      console.log('Parsed Weather Response:', weather);
+        const weather = weatherResponseSchema.parse(response.data);
+        console.log('Parsed Weather Response:', weather);
 
-      res.json(weather);
+        res.json(weather);
+      } catch (apiError: any) {
+        // Specific handling for API errors
+        if (apiError.response) {
+          const status = apiError.response.status;
+          if (status === 401) {
+            throw new Error("Invalid or expired OpenWeatherMap API key. Please verify your API key.");
+          } else if (status === 429) {
+            throw new Error("OpenWeatherMap API rate limit exceeded. Please try again later.");
+          } else {
+            throw new Error(`OpenWeatherMap API error: ${status} - ${apiError.response.data.message || "Unknown error"}`);
+          }
+        }
+        throw apiError; // Re-throw if not a specific API error
+      }
     } catch (error) {
       console.error('Weather API Error:', error);
       if (error instanceof z.ZodError) {
@@ -63,26 +120,41 @@ export async function registerRoutes(app: Express) {
 
       const { origin, destination } = querySchema.parse(req.query);
 
-      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.lat},${origin.lng}&destinations=${destination.lat},${destination.lng}&key=${GOOGLE_API_KEY}`;
+      const baseUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.lat},${origin.lng}&destinations=${destination.lat},${destination.lng}&key=${GOOGLE_API_KEY}`;
+
+      // Sign the URL if we have a signing secret
+      const url = signGoogleMapsUrl(baseUrl);
       console.log("Calling Distance API:", url.replace(GOOGLE_API_KEY, 'HIDDEN'));
 
-      const response = await axios.get(url);
-      console.log('Distance API Raw Response:', response.data);
+      try {
+        const response = await axios.get(url);
+        console.log('Distance API Raw Response:', response.data);
 
-      if (response.data.status !== "OK") {
-        throw new Error(`Distance Matrix API error: ${response.data.status}`);
+        if (response.data.status !== "OK") {
+          throw new Error(`Distance Matrix API error: ${response.data.status}`);
+        }
+
+        const distance = distanceResponseSchema.parse(response.data);
+        console.log('Parsed Distance Response:', distance);
+
+        // Additional validation of the response
+        const element = distance.rows[0]?.elements[0];
+        if (!element || element.status !== "OK" || !element.duration) {
+          throw new Error(element?.error_message || "Could not calculate travel time");
+        }
+
+        res.json(distance);
+      } catch (apiError: any) {
+        if (apiError.response && apiError.response.status) {
+          const status = apiError.response.status;
+          if (status === 401 || status === 403) {
+            throw new Error("Invalid or restricted Google Maps API key. Please verify your API key and enabled services.");
+          } else {
+            throw new Error(`Google Maps API error: ${status} - ${apiError.response.data?.error_message || "Unknown error"}`);
+          }
+        }
+        throw apiError;
       }
-
-      const distance = distanceResponseSchema.parse(response.data);
-      console.log('Parsed Distance Response:', distance);
-
-      // Additional validation of the response
-      const element = distance.rows[0]?.elements[0];
-      if (!element || element.status !== "OK" || !element.duration) {
-        throw new Error(element?.error_message || "Could not calculate travel time");
-      }
-
-      res.json(distance);
     } catch (error) {
       console.error('Distance API Error:', error);
       if (error instanceof z.ZodError) {
