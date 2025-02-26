@@ -1,0 +1,61 @@
+Using Google Maps API Key: Key is present
+Map component rendered with userLocation: 
+Object {lat: 45.5545485, lng: -94.2476899}
+Selected location state: null
+As of February 21st, 2024, google.maps.Marker is deprecated. Please use google.maps.marker.AdvancedMarkerElement instead. At this time, google.maps.Marker is not scheduled to be discontinued, but google.maps.marker.AdvancedMarkerElement is recommended over google.maps.Marker. While google.maps.Marker will continue to receive bug fixes for any major regressions, existing bugs in google.maps.Marker will not be addressed. At least 12 months notice will be given before support is discontinued. Please see https://developers.google.com/maps/deprecations for additional details and https://developers.google.com/maps/documentation/javascript/advanced-markers/migration for the migration guide.
+Map clicked, setting location: 
+Object {lat: 45.62086107041049, lng: -94.20717781503905}
+Using Google Maps API Key: Key is present
+Map component rendered with userLocation: 
+Object {lat: 45.5545485, lng: -94.2476899}
+Selected location state: 
+Object {lat: 45.62086107041049, lng: -94.20717781503905}
+Weather query state: 
+Object {isLoading: true, isError: false, data: undefined, error: null}
+Distance query state: 
+Object {isLoading: true, isError: false, data: undefined, error: null}
+Fetching weather for location: 
+Object {lat: 45.62086107041049, lng: -94.20717781503905}
+Fetching distance between: 
+Object {userLocation: {…}, location: {…}}
+Weather API response: 
+Object {current: {…}, daily: Array(4)}
+Weather query state: 
+Object {isLoading: false, isError: false, data: {…}, error: null}
+Distance query state: 
+Object {isLoading: true, isError: false, data: undefined, error: null}
+Distance API response: 
+Object {rows: Array(1)}
+Weather query state: 
+Object {isLoading: false, isError: false, data: {…}, error: null}
+Distance query state: 
+Object {isLoading: false, isError: false, data: {…}, error: null}
+Distance data structure: {"rows":[{"elements":[{"status":"OK","duration":{"text":"15 mins","value":926}}]}]}
+Map clicked, setting location: 
+Object {lat: 45.563683142019144, lng: -94.3146378370117}
+Using Google Maps API Key: Key is present
+Map component rendered with userLocation: 
+Object {lat: 45.5545485, lng: -94.2476899}
+Selected location state: 
+Object {lat: 45.563683142019144, lng: -94.3146378370117}
+Weather query state: 
+Object {isLoading: true, isError: false, data: undefined, error: null}
+Distance query state: 
+Object {isLoading: true, isError: false, data: undefined, error: null}
+Fetching weather for location: 
+Object {lat: 45.563683142019144, lng: -94.3146378370117}
+Fetching distance between: 
+Object {userLocation: {…}, location: {…}}
+Weather API response: 
+Object {current: {…}, daily: Array(4)}
+Weather query state: 
+Object {isLoading: false, isError: false, data: {…}, error: null}
+Distance query state: 
+Object {isLoading: true, isError: false, data: undefined, error: null}
+Distance API response: 
+Object {rows: Array(1)}
+Weather query state: 
+Object {isLoading: false, isError: false, data: {…}, error: null}
+Distance query state: 
+Object {isLoading: false, isError: false, data: {…}, error: null}
+Distance data structure: {"rows":[{"elements":[{"status":"OK","duration":{"text":"7 mins","value":445}}]}]}

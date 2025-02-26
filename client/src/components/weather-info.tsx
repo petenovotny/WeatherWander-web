@@ -77,7 +77,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   if (weatherQuery.isLoading || distanceQuery.isLoading) {
     return (
-      <Card className="absolute bottom-4 left-4 w-96">
+      <Card className="absolute bottom-4 left-4 w-96 z-50">
         <CardContent className="p-4">
           <div className="flex items-center space-x-2">
             <Loader2 className="h-5 w-5 animate-spin" />
@@ -99,7 +99,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
                          "Error loading data";
 
     return (
-      <Card className="absolute bottom-4 left-4 w-96 bg-red-50">
+      <Card className="absolute bottom-4 left-4 w-96 bg-red-50 z-50">
         <CardContent className="p-4">
           <div className="flex items-start space-x-2">
             <AlertCircle className="h-5 w-5 text-red-500 flex-shrink-0 mt-0.5" />
@@ -126,7 +126,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   if (!weatherQuery.data) {
     console.warn("Weather data is missing!");
     return (
-      <Card className="absolute bottom-4 left-4 w-96">
+      <Card className="absolute bottom-4 left-4 w-96 z-50">
         <CardContent className="p-4">
           <p>Weather data unavailable</p>
         </CardContent>
@@ -137,7 +137,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   if (!distanceQuery.data) {
     console.warn("Distance data is missing!");
     return (
-      <Card className="absolute bottom-4 left-4 w-96">
+      <Card className="absolute bottom-4 left-4 w-96 z-50">
         <CardContent className="p-4">
           <p>Travel time data unavailable</p>
         </CardContent>
@@ -160,7 +160,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   if (!hasElements) {
     console.warn("Missing elements in distance data");
     return (
-      <Card className="absolute bottom-4 left-4 w-96">
+      <Card className="absolute bottom-4 left-4 w-96 z-50">
         <CardContent className="p-4">
           <p className="text-destructive">
             Could not calculate travel time: Missing data
@@ -174,7 +174,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
   if (!element?.duration || element.status !== "OK") {
     return (
-      <Card className="absolute bottom-4 left-4 w-96">
+      <Card className="absolute bottom-4 left-4 w-96 z-50">
         <CardContent className="p-4">
           <p className="text-destructive">
             {element?.error_message || "Could not calculate travel time"}
@@ -185,7 +185,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
   }
 
   return (
-    <Card className="absolute bottom-4 left-4 w-96 bg-white/90 backdrop-blur">
+    <Card className="absolute bottom-4 left-4 w-96 bg-white/90 backdrop-blur z-50">
       <CardContent className="p-4">
         {/* Show a notice when using mock data */}
         {weather.isMockData && (
