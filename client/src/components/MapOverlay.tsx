@@ -31,6 +31,13 @@ const toFahrenheit = (celsius: number): number => {
   return Math.round((celsius * 9/5) + 32);
 };
 
+// Format date as short day name
+const formatDayName = (dayOffset: number): string => {
+  const date = new Date();
+  date.setDate(date.getDate() + dayOffset);
+  return date.toLocaleDateString('en-US', { weekday: 'short' });
+};
+
 const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
   const [isMobile, setIsMobile] = useState(false);
 
@@ -99,9 +106,9 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
       high: toFahrenheit((weather.daily[0].temp as {max: number}).max),
       icon: weather.daily[0].weather[0].icon
     },
-    // Next 3 days
+    // Next 3 days with actual day names
     ...weather.daily.slice(1, 4).map((day, i) => ({
-      label: `+${i+1}d`,
+      label: formatDayName(i+1),
       low: toFahrenheit((day.temp as {min: number}).min),
       high: toFahrenheit((day.temp as {max: number}).max),
       icon: day.weather[0].icon
