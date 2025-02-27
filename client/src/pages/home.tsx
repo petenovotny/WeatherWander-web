@@ -277,7 +277,7 @@ export default function Home() {
             <div>
               <h3 className="font-medium text-sm">Multi-Location Weather</h3>
               <p className="text-xs text-gray-600 mt-1">
-                Click anywhere on the map to add locations and view weather data. Click on a marker to remove it.
+                Click anywhere on the map to add locations and view weather data.
                 Weather information stays visible until you refresh the page.
               </p>
               <Button 
