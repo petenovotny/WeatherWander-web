@@ -113,6 +113,57 @@ function generateMockWeatherData(lat: number, lng: number): any {
   };
 }
 
+/**
+ * Generate mock distance data based on actual coordinates
+ * This creates a more realistic travel time estimate based on the distance between points
+ * @param origin Starting coordinates
+ * @param destination Ending coordinates 
+ * @returns Mock distance response with simulated travel time
+ */
+function generateMockDistanceData(origin: {lat: number, lng: number}, destination: {lat: number, lng: number}): any {
+  // Calculate great-circle distance between points (Haversine formula)
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (destination.lat - origin.lat) * (Math.PI / 180);
+  const dLng = (destination.lng - origin.lng) * (Math.PI / 180);
+  const a = 
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(origin.lat * (Math.PI / 180)) * Math.cos(destination.lat * (Math.PI / 180)) * 
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c;
+
+  // Estimate travel time (assuming average 60 km/h or ~37 mph)
+  // This is a very rough estimate that doesn't account for roads or traffic
+  const travelTimeMinutes = Math.round(distance * 60 / 60);
+
+  // Format the travel time in a human-readable format
+  let travelTimeText = "";
+  if (travelTimeMinutes < 60) {
+    travelTimeText = `${travelTimeMinutes} mins`;
+  } else {
+    const hours = Math.floor(travelTimeMinutes / 60);
+    const mins = travelTimeMinutes % 60;
+    if (mins === 0) {
+      travelTimeText = `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    } else {
+      travelTimeText = `${hours} ${hours === 1 ? 'hour' : 'hours'} ${mins} mins`;
+    }
+  }
+
+  return {
+    rows: [{
+      elements: [{
+        status: "OK",
+        duration: {
+          text: travelTimeText,
+          value: travelTimeMinutes * 60 // seconds
+        }
+      }]
+    }],
+    isMockData: true
+  };
+}
+
 export async function registerRoutes(app: Express) {
   app.get("/api/weather", async (req, res) => {
     try {
@@ -182,7 +233,7 @@ export async function registerRoutes(app: Express) {
         }
 
         // Process each 3-hour forecast
-        forecastList.forEach(item => {
+        forecastList.forEach((item: any) => {
           // Convert Unix timestamp (UTC) to Date object, then adjust for location's timezone
           const utcDate = new Date(item.dt * 1000);
           const localDate = new Date(utcDate.getTime() + (timezoneOffsetSeconds * 1000));
@@ -223,7 +274,7 @@ export async function registerRoutes(app: Express) {
           });
 
           // Find the weather description that matches the most common icon
-          const weatherWithIcon = dayForecast.weather.find(w => w.icon === mostCommonIcon) || dayForecast.weather[0];
+          const weatherWithIcon = dayForecast.weather.find((w: any) => w.icon === mostCommonIcon) || dayForecast.weather[0];
 
           // Clean up the forecast data
           dayForecast.weather = [weatherWithIcon];
@@ -360,19 +411,8 @@ export async function registerRoutes(app: Express) {
           if (status === 401 || status === 403) {
             // For API key issues, return mock data instead of failing
             console.log("Google Maps API key issue detected. Using mock distance data.");
-            const mockDistance = {
-              rows: [{
-                elements: [{
-                  status: "OK",
-                  duration: {
-                    text: "~15 mins",
-                    value: 900
-                  }
-                }]
-              }]
-            };
-            // Add a flag to indicate this is mock data
-            return res.json({...mockDistance, isMockData: true});
+            const mockDistance = generateMockDistanceData(origin, destination);
+            return res.json(mockDistance);
           } else {
             throw new Error(`Google Maps API error: ${status} - ${apiError.response.data?.error_message || "Unknown error"}`);
           }

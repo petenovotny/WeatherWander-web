@@ -231,6 +231,17 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
         }}>
           <Clock size={isMobile ? 10 : 12} style={{ marginRight: '3px', color: '#4b5563' }} />
           {element.duration?.text}
+          {/* If this is mock data, show a small indicator */}
+          {(distance as any).isMockData && (
+            <span style={{ 
+              marginLeft: '3px', 
+              fontSize: isMobile ? '8px' : '9px', 
+              color: '#9a3412',
+              fontWeight: 'normal'
+            }}>
+              (est.)
+            </span>
+          )}
         </div>
 
         {/* Weather forecast */}
