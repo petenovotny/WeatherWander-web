@@ -161,9 +161,13 @@ export default function MapView({ userLocation }: MapViewProps) {
         onClick={handleMapClick}
         onLoad={onMapLoad}
         options={{
-          disableDefaultUI: true,
+          disableDefaultUI: false, // Enable default UI for better mobile controls
           zoomControl: true,
-          styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }]
+          fullscreenControl: true, // Allow fullscreen on mobile
+          styles: [{ featureType: "poi", elementType: "labels", stylers: [{ visibility: "off" }] }],
+          gestureHandling: "greedy", // Improves touch handling for mobile
+          minZoom: 3, // Prevent extreme zoom out
+          maxZoom: 18 // Limit max zoom to prevent issues
         }}
       >
         {/* User's current location marker */}

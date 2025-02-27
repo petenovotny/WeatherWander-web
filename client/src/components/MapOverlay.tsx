@@ -108,27 +108,9 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
     }))
   ];
 
-  // Making the display 50% larger than before
-  // For mobile, we'll make it 75% of the new larger size (which is still larger than the previous mobile size)
-  const scaleFactor = isMobile ? 0.75 : 1.5;
-
-  // Adjust sizes for mobile and desktop (50% larger than before)
-  const fontSize = {
-    label: isMobile ? '8px' : '12px',
-    temp: isMobile ? '9px' : '14px',
-    time: isMobile ? '10px' : '16px'
-  };
-
-  const iconSize = {
-    weather: isMobile ? 12 : 18,
-    clock: isMobile ? 10 : 15
-  };
-
-  const padding = {
-    pill: isMobile ? '3px 6px' : '5px 10px',
-    container: isMobile ? '3px 6px' : '5px 10px',
-    item: isMobile ? '0 3px' : '0 5px'
-  };
+  // Adjusted for better mobile compatibility - using classes and relative sizing
+  // instead of explicit transform scale which can interfere with pinch gestures
+  const containerClass = isMobile ? 'weather-overlay-mobile' : 'weather-overlay';
 
   return (
     <OverlayView
@@ -139,40 +121,52 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
         y: 20, // Position below the marker
       })}
     >
-      <div style={{ 
-        whiteSpace: 'nowrap', 
-        display: 'flex', 
+      <div className={containerClass} style={{
+        whiteSpace: 'nowrap',
+        display: 'flex',
         flexDirection: 'column',
-        alignItems: 'center', 
-        gap: isMobile ? '3px' : '5px',
-        background: 'transparent',
-        transform: `scale(${scaleFactor})`,
-        transformOrigin: 'center top'
+        alignItems: 'center',
+        gap: '4px',
+        pointerEvents: 'none' // Prevent interfering with map gestures
       }}>
-        {/* Compact travel time pill */}
-        <span style={{ 
-          display: 'flex', 
-          alignItems: 'center', 
-          backgroundColor: 'rgba(255, 255, 255, 0.6)', 
-          padding: padding.pill, 
-          borderRadius: '14px',
-          fontSize: fontSize.time,
-          fontWeight: '500',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
-        }}>
-          <Clock size={iconSize.clock} style={{ marginRight: '3px', color: '#4b5563' }} />
-          {element.duration.text}
-        </span>
+        {/* Weather info pill with mock data warning if applicable */}
+        {weather.isMockData && (
+          <div style={{
+            backgroundColor: 'rgba(255, 237, 213, 0.8)',
+            padding: '1px 4px',
+            borderRadius: '6px',
+            fontSize: '9px',
+            color: '#9a3412',
+            marginBottom: '-2px'
+          }}>
+            Simulated weather data
+          </div>
+        )}
 
-        {/* Ultra-compact forecast */}
+        {/* Travel time pill */}
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '3px' : '6px',
-          backgroundColor: 'rgba(255, 255, 255, 0.6)',
-          padding: padding.container,
-          borderRadius: '14px',
-          boxShadow: '0 1px 2px rgba(0,0,0,0.08)'
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          padding: '2px 6px',
+          borderRadius: '10px',
+          fontSize: isMobile ? '10px' : '11px',
+          fontWeight: '500',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+        }}>
+          <Clock size={isMobile ? 10 : 12} style={{ marginRight: '3px', color: '#4b5563' }} />
+          {element.duration?.text}
+        </div>
+
+        {/* Weather forecast */}
+        <div style={{
+          display: 'flex',
+          alignItems: 'center',
+          backgroundColor: 'rgba(255, 255, 255, 0.8)',
+          padding: '2px 6px',
+          borderRadius: '10px',
+          boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+          fontSize: isMobile ? '9px' : '10px'
         }}>
           {daysToShow.map((day, i) => {
             const DayIcon = weatherIcons[day.icon] || Cloud;
@@ -181,16 +175,15 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
                 display: 'flex',
                 flexDirection: 'column',
                 alignItems: 'center',
-                padding: padding.item,
-                borderRight: i < daysToShow.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none',
-                fontSize: '10px'
+                padding: '0 4px',
+                borderRight: i < daysToShow.length - 1 ? '1px solid rgba(0,0,0,0.05)' : 'none'
               }}>
-                <span style={{ fontSize: fontSize.label, color: '#4b5563', fontWeight: '500' }}>{day.label}</span>
-                <DayIcon size={iconSize.weather} style={{ margin: '1px 0' }} />
+                <span style={{ fontSize: isMobile ? '8px' : '9px', color: '#4b5563', fontWeight: '500' }}>{day.label}</span>
+                <DayIcon size={isMobile ? 10 : 14} style={{ margin: '1px 0' }} />
                 {/* Vertical temperature display with high above low */}
                 <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                  <span style={{ color: '#b91c1c', fontSize: fontSize.temp, fontWeight: '500' }}>{day.high}°</span>
-                  <span style={{ color: '#1d4ed8', fontSize: fontSize.temp, fontWeight: '500' }}>{day.low}°</span>
+                  <span style={{ color: '#b91c1c', fontSize: isMobile ? '8px' : '9px', fontWeight: '500' }}>{day.high}°</span>
+                  <span style={{ color: '#1d4ed8', fontSize: isMobile ? '8px' : '9px', fontWeight: '500' }}>{day.low}°</span>
                 </div>
               </div>
             );
