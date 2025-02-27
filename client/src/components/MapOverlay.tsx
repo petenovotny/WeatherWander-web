@@ -108,25 +108,26 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
     }))
   ];
 
-  // Calculate scale factor for mobile (75% smaller = 0.25 of original size)
-  const scaleFactor = isMobile ? 0.75 : 1;
+  // Making the display 50% larger than before
+  // For mobile, we'll make it 75% of the new larger size (which is still larger than the previous mobile size)
+  const scaleFactor = isMobile ? 0.75 : 1.5;
 
-  // Adjust sizes for mobile
+  // Adjust sizes for mobile and desktop (50% larger than before)
   const fontSize = {
-    label: isMobile ? '6px' : '8px',
-    temp: isMobile ? '6px' : '9px',
-    time: isMobile ? '8px' : '11px'
+    label: isMobile ? '8px' : '12px',
+    temp: isMobile ? '9px' : '14px',
+    time: isMobile ? '10px' : '16px'
   };
 
   const iconSize = {
-    weather: isMobile ? 8 : 12,
-    clock: isMobile ? 7 : 10
+    weather: isMobile ? 12 : 18,
+    clock: isMobile ? 10 : 15
   };
 
   const padding = {
-    pill: isMobile ? '2px 4px' : '3px 6px',
-    container: isMobile ? '2px 4px' : '3px 6px',
-    item: isMobile ? '0 2px' : '0 3px'
+    pill: isMobile ? '3px 6px' : '5px 10px',
+    container: isMobile ? '3px 6px' : '5px 10px',
+    item: isMobile ? '0 3px' : '0 5px'
   };
 
   return (
@@ -143,9 +144,9 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
         display: 'flex', 
         flexDirection: 'column',
         alignItems: 'center', 
-        gap: isMobile ? '2px' : '3px',
+        gap: isMobile ? '3px' : '5px',
         background: 'transparent',
-        transform: isMobile ? `scale(${scaleFactor})` : 'none',
+        transform: `scale(${scaleFactor})`,
         transformOrigin: 'center top'
       }}>
         {/* Compact travel time pill */}
@@ -167,7 +168,7 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
         <div style={{
           display: 'flex',
           alignItems: 'center',
-          gap: isMobile ? '2px' : '4px',
+          gap: isMobile ? '3px' : '6px',
           backgroundColor: 'rgba(255, 255, 255, 0.6)',
           padding: padding.container,
           borderRadius: '14px',
