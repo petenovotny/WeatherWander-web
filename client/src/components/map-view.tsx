@@ -16,7 +16,7 @@ const libraries = ["places"] as const;
 export default function MapView({ userLocation }: MapViewProps) {
   // Change from single location to array of locations
   const [selectedLocations, setSelectedLocations] = useState<Location[]>([]);
-  const [showRemoveTooltip, setShowRemoveTooltip] = useState(false);
+  // Removed showRemoveTooltip state since we don't want to show the tooltip anymore
   const { toast } = useToast();
   const mapRef = useRef<google.maps.Map | null>(null);
 
@@ -47,12 +47,8 @@ export default function MapView({ userLocation }: MapViewProps) {
     // Add the new location to the array instead of replacing
     setSelectedLocations(prev => [...prev, newLocation]);
 
-    // Show remove tooltip hint the first time a location is added
-    if (selectedLocations.length === 0) {
-      setShowRemoveTooltip(true);
-      setTimeout(() => setShowRemoveTooltip(false), 5000); // Hide after 5 seconds
-    }
-  }, [selectedLocations]);
+    // Removed the tooltip logic that was here previously
+  }, []);
 
   // Handle map load event to store reference
   const onMapLoad = useCallback((map: google.maps.Map) => {
@@ -146,13 +142,7 @@ export default function MapView({ userLocation }: MapViewProps) {
         </div>
       </div>
 
-      {/* Remove location tooltip */}
-      {showRemoveTooltip && selectedLocations.length > 0 && (
-        <div className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 z-50 bg-black/75 text-white px-4 py-2 rounded-md shadow-lg animate-fade-in flex items-center gap-2">
-          <X className="h-4 w-4" />
-          <span className="text-sm">Click on any marker to remove it</span>
-        </div>
-      )}
+      {/* Removed the tooltip that was here */}
 
       <GoogleMap
         mapContainerClassName="h-full w-full"
