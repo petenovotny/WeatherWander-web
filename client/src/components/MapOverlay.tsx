@@ -55,25 +55,50 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
   const weatherQuery = useQuery<WeatherResponse>({
     queryKey: ["/api/weather", location.lat, location.lng],
     queryFn: async () => {
+      console.log("Fetching weather for location:", location);
       const response = await fetch(`/api/weather?lat=${location.lat}&lng=${location.lng}`);
       if (!response.ok) {
         throw new Error(`Error ${response.status}: Failed to fetch weather data`);
       }
-      return response.json();
+      const data = await response.json();
+      console.log("Weather API response:", data);
+      return data;
     },
   });
 
   const distanceQuery = useQuery<DistanceResponse>({
     queryKey: ["/api/distance", userLocation, location],
     queryFn: async () => {
+      console.log("Fetching distance between:", { userLocation, location });
       const response = await fetch(
         `/api/distance?origin[lat]=${userLocation.lat}&origin[lng]=${userLocation.lng}&destination[lat]=${location.lat}&destination[lng]=${location.lng}`
       );
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error("Distance API error:", errorText);
         throw new Error(`Error ${response.status}: Failed to calculate travel time`);
       }
-      return response.json();
+      const data = await response.json();
+      console.log("Distance API response:", data);
+      // Log the actual structure to help debug
+      console.log("Distance data structure:", JSON.stringify(data));
+      return data;
     },
+  });
+
+  // Add detailed logging for debugging
+  console.log("Weather query state:", {
+    isLoading: weatherQuery.isLoading,
+    isError: weatherQuery.isError,
+    data: weatherQuery.data,
+    error: weatherQuery.error
+  });
+
+  console.log("Distance query state:", {
+    isLoading: distanceQuery.isLoading,
+    isError: distanceQuery.isError,
+    data: distanceQuery.data,
+    error: distanceQuery.error
   });
 
   if (weatherQuery.isLoading || distanceQuery.isLoading || 
@@ -87,7 +112,53 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
   // Basic validation of distance data structure
   if (distance.rows?.[0]?.elements?.[0]?.status !== "OK" || 
       !distance.rows[0].elements[0].duration) {
-    return null;
+    // Log the error and return a fallback UI instead of null
+    console.error("Invalid distance data structure:", distance);
+
+    // Return a simple fallback UI to at least show weather information
+    return (
+      <OverlayView
+        position={location}
+        mapPaneName={OverlayView.OVERLAY_MOUSE_TARGET}
+        getPixelPositionOffset={(width, height) => ({
+          x: -(width / 2),
+          y: 20, // Position below the marker
+        })}
+      >
+        <div className={isMobile ? 'weather-overlay-mobile' : 'weather-overlay'} style={{
+          whiteSpace: 'nowrap',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          gap: '4px',
+          pointerEvents: 'none' // Prevent interfering with map gestures
+        }}>
+          {/* Weather forecast only */}
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            backgroundColor: 'rgba(255, 255, 255, 0.8)',
+            padding: '2px 6px',
+            borderRadius: '10px',
+            boxShadow: '0 1px 2px rgba(0,0,0,0.1)',
+            fontSize: isMobile ? '9px' : '10px'
+          }}>
+            <span style={{ fontSize: isMobile ? '8px' : '9px', color: '#4b5563', fontWeight: '500' }}>
+              {Math.round(weather.current.temp as number)}°F
+            </span>
+          </div>
+          <div style={{
+            backgroundColor: 'rgba(255, 218, 218, 0.8)',
+            padding: '1px 4px',
+            borderRadius: '6px',
+            fontSize: '9px',
+            color: '#9a3412'
+          }}>
+            Travel time unavailable
+          </div>
+        </div>
+      </OverlayView>
+    );
   }
 
   const element = distance.rows[0].elements[0];
