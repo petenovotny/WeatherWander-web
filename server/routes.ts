@@ -131,10 +131,10 @@ export async function registerRoutes(app: Express) {
       const maskedKey = WEATHER_API_KEY.substring(0, 4) + "..." + WEATHER_API_KEY.substring(WEATHER_API_KEY.length - 4);
       console.log(`Using OpenWeatherMap API key: ${maskedKey} (${WEATHER_API_KEY.length} characters)`);
 
-      // Use free 5-day forecast API with 3-hour intervals
-      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lng}&units=metric&appid=${WEATHER_API_KEY}`;
-      // Also get current weather separately
-      const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=metric&appid=${WEATHER_API_KEY}`;
+      // Use free 5-day forecast API with 3-hour intervals - CHANGED to imperial units
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lng}&units=imperial&appid=${WEATHER_API_KEY}`;
+      // Also get current weather separately - CHANGED to imperial units
+      const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=imperial&appid=${WEATHER_API_KEY}`;
 
       console.log("Calling Weather API:", forecastUrl.replace(WEATHER_API_KEY, 'HIDDEN'));
 

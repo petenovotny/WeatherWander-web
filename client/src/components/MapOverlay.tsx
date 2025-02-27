@@ -26,11 +26,6 @@ const weatherIcons: Record<string, any> = {
   "10n": CloudRain,
 };
 
-// Helper function to convert Celsius to Fahrenheit
-const toFahrenheit = (celsius: number): number => {
-  return Math.round((celsius * 9/5) + 32);
-};
-
 // Format date as short day name
 const formatDayName = (dayOffset: number): string => {
   const date = new Date();
@@ -102,15 +97,17 @@ const MapOverlay: React.FC<MapOverlayProps> = ({ location, userLocation }) => {
     // Today
     {
       label: 'Today',
-      low: toFahrenheit((weather.daily[0].temp as {min: number}).min),
-      high: toFahrenheit((weather.daily[0].temp as {max: number}).max),
+      // API now returns values in Fahrenheit directly - no conversion needed
+      low: Math.round((weather.daily[0].temp as {min: number}).min),
+      high: Math.round((weather.daily[0].temp as {max: number}).max),
       icon: weather.daily[0].weather[0].icon
     },
     // Next 3 days with actual day names
     ...weather.daily.slice(1, 4).map((day, i) => ({
       label: formatDayName(i+1),
-      low: toFahrenheit((day.temp as {min: number}).min),
-      high: toFahrenheit((day.temp as {max: number}).max),
+      // API now returns values in Fahrenheit directly - no conversion needed
+      low: Math.round((day.temp as {min: number}).min),
+      high: Math.round((day.temp as {max: number}).max),
       icon: day.weather[0].icon
     }))
   ];

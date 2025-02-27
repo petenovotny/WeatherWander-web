@@ -172,7 +172,7 @@ export default function WeatherInfo({ location, userLocation }: WeatherInfoProps
 
       <div className="flex items-center justify-center gap-2">
         <WeatherIcon className="h-5 w-5 text-primary" />
-        <p className="text-base font-semibold">{Math.round(weather.current.temp as number)}°C</p>
+        <p className="text-base font-semibold">{Math.round(weather.current.temp as number)}°F</p>
       </div>
       <p className="text-[10px] text-gray-500 mb-1">{currentWeather.description}</p>
 
