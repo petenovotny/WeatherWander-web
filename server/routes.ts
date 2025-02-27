@@ -74,6 +74,30 @@ function generateMockWeatherData(lat: number, lng: number): any {
     icon = "02d";
   }
 
+  // Generate truly different daily forecasts with proper highs and lows
+  const dailyForecasts = Array(4).fill(0).map((_, index) => {
+    // Base temperature increases slightly each day (climate warming simulation)
+    const dayVariation = index * 0.5;
+
+    // Generate a range of temperatures throughout the day
+    // For a proper forecast, we'd analyze hourly data for each day
+    const dayHigh = currentTemp + 3 + dayVariation + (Math.random() * 2);
+    const dayLow = currentTemp - 5 + dayVariation - (Math.random() * 2);
+
+    return {
+      temp: {
+        min: parseFloat(dayLow.toFixed(1)),
+        max: parseFloat(dayHigh.toFixed(1))
+      },
+      weather: [
+        {
+          icon: icon,
+          description: condition
+        }
+      ]
+    };
+  });
+
   return {
     current: {
       temp: currentTemp,
@@ -84,34 +108,7 @@ function generateMockWeatherData(lat: number, lng: number): any {
         }
       ]
     },
-    daily: [
-      // Today
-      {
-        temp: {
-          min: currentTemp - 5,
-          max: currentTemp + 3
-        },
-        weather: [
-          {
-            icon: icon,
-            description: condition
-          }
-        ]
-      },
-      // Next 3 days with some variations
-      ...[1, 2, 3].map(day => ({
-        temp: {
-          min: currentTemp - 5 + (day * 0.8),
-          max: currentTemp + 3 + (day * 0.6)
-        },
-        weather: [
-          {
-            icon: icon,
-            description: condition
-          }
-        ]
-      }))
-    ],
+    daily: dailyForecasts,
     isMockData: true
   };
 }
@@ -134,40 +131,37 @@ export async function registerRoutes(app: Express) {
       const maskedKey = WEATHER_API_KEY.substring(0, 4) + "..." + WEATHER_API_KEY.substring(WEATHER_API_KEY.length - 4);
       console.log(`Using OpenWeatherMap API key: ${maskedKey} (${WEATHER_API_KEY.length} characters)`);
 
-      // Most basic Current Weather API endpoint from the free tier
-      const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=metric&appid=${WEATHER_API_KEY}`;
-      console.log("Calling Current Weather API:", currentWeatherUrl.replace(WEATHER_API_KEY, 'HIDDEN'));
+      // Use One Call API for proper hourly and daily forecasts
+      const oneCallUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lng}&units=metric&exclude=minutely,alerts&appid=${WEATHER_API_KEY}`;
+      console.log("Calling One Call API:", oneCallUrl.replace(WEATHER_API_KEY, 'HIDDEN'));
 
       try {
-        const response = await axios.get(currentWeatherUrl);
-        console.log('Current Weather API Success - Status:', response.status);
-        console.log('Current Weather API Full Response:', JSON.stringify(response.data));
+        const response = await axios.get(oneCallUrl);
+        console.log('One Call API Success - Status:', response.status);
 
-        // Transform the simpler response to match our schema structure
+        // For debugging only - don't log full API response in production
+        if (process.env.NODE_ENV !== 'production') {
+          console.log('One Call API Sample Data:', JSON.stringify({
+            current: response.data.current,
+            hourly_count: response.data.hourly?.length || 0,
+            daily_count: response.data.daily?.length || 0
+          }));
+        }
+
+        // Process the response to match our schema
+        // The One Call API already gives us properly calculated daily highs and lows based on hourly data
         const transformedData = {
           current: {
-            temp: response.data.main.temp,
-            weather: response.data.weather
+            temp: response.data.current.temp,
+            weather: response.data.current.weather
           },
-          daily: [
-            // Use the same current weather data for the first day
-            {
-              temp: {
-                min: response.data.main.temp_min,
-                max: response.data.main.temp_max
-              },
-              weather: response.data.weather
+          daily: response.data.daily.slice(0, 4).map((day: any) => ({
+            temp: {
+              min: day.temp.min,
+              max: day.temp.max
             },
-            // Add some placeholder data for remaining days
-            // In a real app, you'd want to fetch the forecast properly
-            ...Array(3).fill(0).map(() => ({
-              temp: {
-                min: response.data.main.temp_min,
-                max: response.data.main.temp_max
-              },
-              weather: response.data.weather
-            }))
-          ]
+            weather: day.weather
+          }))
         };
 
         // Parse with our schema to validate
