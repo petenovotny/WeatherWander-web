@@ -150,17 +150,30 @@ export async function registerRoutes(app: Express) {
 
         // Group forecast by day and find min/max for each day
         const forecastList = forecastResponse.data.list || [];
-        const forecasts = {};
+        const forecasts: Record<string, any> = {};
 
-        // Initialize with today's date
-        const today = new Date();
+        // Get the location's timezone offset from the current weather data
+        // OpenWeatherMap API returns timezone offset in seconds from UTC
+        const timezoneOffsetSeconds = currentResponse.data.timezone || 0;
+        console.log(`Location timezone offset: ${timezoneOffsetSeconds} seconds from UTC`);
+
+        // Initialize with today's date IN THE LOCATION'S TIMEZONE
+        // Create a Date object for current UTC time, then adjust for the location's timezone
+        const utcNow = new Date();
+        // Convert to milliseconds and adjust for the timezone offset
+        const locationTime = new Date(utcNow.getTime() + (timezoneOffsetSeconds * 1000));
+        // Reset to the start of the day in the location's timezone
+        const today = new Date(locationTime);
         today.setHours(0, 0, 0, 0);
+
+        console.log(`Local date used for forecast grouping: ${today.toISOString()}`);
 
         // Initialize days (today + 3 more days)
         for (let i = 0; i < 4; i++) {
           const date = new Date(today);
           date.setDate(date.getDate() + i);
           const dateStr = date.toISOString().split('T')[0];
+          console.log(`Initializing forecast container for: ${dateStr}`);
           forecasts[dateStr] = {
             temp: { min: Infinity, max: -Infinity },
             weather: [],
@@ -170,8 +183,10 @@ export async function registerRoutes(app: Express) {
 
         // Process each 3-hour forecast
         forecastList.forEach(item => {
-          const date = new Date(item.dt * 1000);
-          const dateStr = date.toISOString().split('T')[0];
+          // Convert Unix timestamp (UTC) to Date object, then adjust for location's timezone
+          const utcDate = new Date(item.dt * 1000);
+          const localDate = new Date(utcDate.getTime() + (timezoneOffsetSeconds * 1000));
+          const dateStr = localDate.toISOString().split('T')[0];
 
           // Only process if within our 4-day window
           if (forecasts[dateStr]) {
