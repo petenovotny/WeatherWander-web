@@ -275,10 +275,9 @@ export default function Home() {
           <div className="flex items-start gap-2">
             <Info className="h-5 w-5 text-primary flex-shrink-0 mt-0.5" />
             <div>
-              <h3 className="font-medium text-sm">Multi-Location Weather</h3>
+              <h3 className="font-medium text-sm">Weather & Travel Time</h3>
               <p className="text-xs text-gray-600 mt-1">
-                Click anywhere on the map to add locations and view weather data.
-                Weather information stays visible until you refresh the page.
+                Tap anywhere on the map to add locations and view real-time weather forecasts and travel times.
               </p>
               <Button 
                 variant="outline" 
