@@ -3,7 +3,7 @@ import { createServer } from "http";
 import axios from "axios";
 import { locationSchema, weatherResponseSchema, distanceResponseSchema } from "@shared/schema";
 import { z } from "zod";
-import * as CryptoJS from 'crypto-js';
+import CryptoJS from 'crypto-js'; // Changed from import * as CryptoJS
 
 const WEATHER_API_KEY = process.env.OPENWEATHERMAP_API_KEY || "default_key";
 const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "default_key";
