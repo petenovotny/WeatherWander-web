@@ -131,37 +131,109 @@ export async function registerRoutes(app: Express) {
       const maskedKey = WEATHER_API_KEY.substring(0, 4) + "..." + WEATHER_API_KEY.substring(WEATHER_API_KEY.length - 4);
       console.log(`Using OpenWeatherMap API key: ${maskedKey} (${WEATHER_API_KEY.length} characters)`);
 
-      // Use One Call API for proper hourly and daily forecasts
-      const oneCallUrl = `https://api.openweathermap.org/data/2.5/onecall?lat=${lat}&lon=${lng}&units=metric&exclude=minutely,alerts&appid=${WEATHER_API_KEY}`;
-      console.log("Calling One Call API:", oneCallUrl.replace(WEATHER_API_KEY, 'HIDDEN'));
+      // Use free 5-day forecast API with 3-hour intervals
+      const forecastUrl = `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lng}&units=metric&appid=${WEATHER_API_KEY}`;
+      // Also get current weather separately
+      const currentWeatherUrl = `https://api.openweathermap.org/data/2.5/weather?lat=${lat}&lon=${lng}&units=metric&appid=${WEATHER_API_KEY}`;
+
+      console.log("Calling Weather API:", forecastUrl.replace(WEATHER_API_KEY, 'HIDDEN'));
 
       try {
-        const response = await axios.get(oneCallUrl);
-        console.log('One Call API Success - Status:', response.status);
+        // Make requests in parallel
+        const [forecastResponse, currentResponse] = await Promise.all([
+          axios.get(forecastUrl),
+          axios.get(currentWeatherUrl)
+        ]);
 
-        // For debugging only - don't log full API response in production
-        if (process.env.NODE_ENV !== 'production') {
-          console.log('One Call API Sample Data:', JSON.stringify({
-            current: response.data.current,
-            hourly_count: response.data.hourly?.length || 0,
-            daily_count: response.data.daily?.length || 0
-          }));
+        console.log('Forecast API Success - Status:', forecastResponse.status);
+        console.log('Current Weather API Success - Status:', currentResponse.status);
+
+        // Group forecast by day and find min/max for each day
+        const forecastList = forecastResponse.data.list || [];
+        const forecasts = {};
+
+        // Initialize with today's date
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        // Initialize days (today + 3 more days)
+        for (let i = 0; i < 4; i++) {
+          const date = new Date(today);
+          date.setDate(date.getDate() + i);
+          const dateStr = date.toISOString().split('T')[0];
+          forecasts[dateStr] = {
+            temp: { min: Infinity, max: -Infinity },
+            weather: [],
+            weatherCounts: {} // To track weather frequency for most common condition
+          };
         }
 
-        // Process the response to match our schema
-        // The One Call API already gives us properly calculated daily highs and lows based on hourly data
+        // Process each 3-hour forecast
+        forecastList.forEach(item => {
+          const date = new Date(item.dt * 1000);
+          const dateStr = date.toISOString().split('T')[0];
+
+          // Only process if within our 4-day window
+          if (forecasts[dateStr]) {
+            // Update min/max temps
+            const temp = item.main.temp;
+            if (temp < forecasts[dateStr].temp.min) {
+              forecasts[dateStr].temp.min = temp;
+            }
+            if (temp > forecasts[dateStr].temp.max) {
+              forecasts[dateStr].temp.max = temp;
+            }
+
+            // Track weather conditions to determine most common
+            const weather = item.weather[0];
+            if (!forecasts[dateStr].weatherCounts[weather.icon]) {
+              forecasts[dateStr].weatherCounts[weather.icon] = 0;
+            }
+            forecasts[dateStr].weatherCounts[weather.icon]++;
+            forecasts[dateStr].weather.push(weather);
+          }
+        });
+
+        // Determine most common weather condition for each day
+        Object.keys(forecasts).forEach(date => {
+          const dayForecast = forecasts[date];
+          let mostCommonIcon = '';
+          let maxCount = 0;
+
+          Object.keys(dayForecast.weatherCounts).forEach(icon => {
+            if (dayForecast.weatherCounts[icon] > maxCount) {
+              maxCount = dayForecast.weatherCounts[icon];
+              mostCommonIcon = icon;
+            }
+          });
+
+          // Find the weather description that matches the most common icon
+          const weatherWithIcon = dayForecast.weather.find(w => w.icon === mostCommonIcon) || dayForecast.weather[0];
+
+          // Clean up the forecast data
+          dayForecast.weather = [weatherWithIcon];
+          delete dayForecast.weatherCounts;
+
+          // Round temperatures
+          dayForecast.temp.min = Math.round(dayForecast.temp.min * 10) / 10;
+          dayForecast.temp.max = Math.round(dayForecast.temp.max * 10) / 10;
+
+          // For any days without forecast data (can happen depending on the time of API request),
+          // use reasonable defaults based on current weather
+          if (dayForecast.temp.min === Infinity) {
+            dayForecast.temp.min = Math.round((currentResponse.data.main.temp - 5) * 10) / 10;
+            dayForecast.temp.max = Math.round((currentResponse.data.main.temp + 5) * 10) / 10;
+            dayForecast.weather = currentResponse.data.weather;
+          }
+        });
+
+        // Prepare the response in our schema format
         const transformedData = {
           current: {
-            temp: response.data.current.temp,
-            weather: response.data.current.weather
+            temp: currentResponse.data.main.temp,
+            weather: currentResponse.data.weather
           },
-          daily: response.data.daily.slice(0, 4).map((day: any) => ({
-            temp: {
-              min: day.temp.min,
-              max: day.temp.max
-            },
-            weather: day.weather
-          }))
+          daily: Object.values(forecasts)
         };
 
         // Parse with our schema to validate
