@@ -3,68 +3,106 @@ import { createServer } from "http";
 import axios from "axios";
 import { locationSchema, weatherResponseSchema, distanceResponseSchema } from "@shared/schema";
 import { z } from "zod";
-import CryptoJS from 'crypto-js';
 
 const WEATHER_API_KEY = process.env.OPENWEATHERMAP_API_KEY || "default_key";
 // Use the backend-specific API key, NOT the VITE_ version
 const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "default_key";
-const GOOGLE_MAPS_SIGNING_SECRET = process.env.GOOGLE_MAPS_SIGNING_SECRET || "";
-
-/**
- * Signs a URL with the Google Maps signing secret
- * @param url The URL to sign
- * @returns The signed URL with signature parameter
- */
-function signGoogleMapsUrl(url: string): string {
-  if (!GOOGLE_MAPS_SIGNING_SECRET) {
-    console.warn("Google Maps signing secret not configured, using unsigned URL");
-    return url;
-  }
-
-  try {
-    // Parse the URL to get path and query parameters
-    const urlObj = new URL(url);
-
-    // Remove any existing signature and API key
-    urlObj.searchParams.delete('signature');
-    urlObj.searchParams.delete('key');
-
-    // Sort parameters alphabetically and reconstruct the query string
-    const sortedParams = Array.from(urlObj.searchParams.entries())
-      .sort(([a], [b]) => a.localeCompare(b));
-    urlObj.search = new URLSearchParams(sortedParams).toString();
-
-    // Create the canonical string to sign: path?params
-    const stringToSign = urlObj.pathname + '?' + urlObj.search;
-
-    console.log("String to be signed:", stringToSign);
-
-    // Decode the base64 signing key
-    const key = CryptoJS.enc.Base64.parse(GOOGLE_MAPS_SIGNING_SECRET);
-
-    // Create HMAC-SHA1 signature
-    const signature = CryptoJS.HmacSHA1(stringToSign, key);
-
-    // Convert to base64 and make URL-safe
-    const base64Signature = signature.toString(CryptoJS.enc.Base64)
-      .replace(/\+/g, '-')
-      .replace(/\//g, '_')
-      .replace(/=+$/, '');
-
-    console.log("Generated URL-safe signature:", base64Signature);
-
-    // Add API key and signature to the URL
-    urlObj.searchParams.append('key', GOOGLE_API_KEY);
-    urlObj.searchParams.append('signature', base64Signature);
-
-    return urlObj.toString();
-  } catch (error) {
-    console.error("Error signing Google Maps URL:", error);
-    return url; // Return the original URL if signing fails
-  }
-}
 
 export async function registerRoutes(app: Express) {
+  app.get("/api/distance", async (req, res) => {
+    try {
+      console.log("Distance API request params:", req.query);
+      const querySchema = z.object({
+        origin: z.object({
+          lat: z.string().transform(val => Number(val)),
+          lng: z.string().transform(val => Number(val))
+        }),
+        destination: z.object({
+          lat: z.string().transform(val => Number(val)),
+          lng: z.string().transform(val => Number(val))
+        })
+      });
+
+      // Enhanced logging of environment variables and API keys
+      const maskedKey = GOOGLE_API_KEY.substring(0, 4) + "..." + GOOGLE_API_KEY.substring(GOOGLE_API_KEY.length - 4);
+      console.log("Using Google Maps API key:", {
+        KEY_PREFIX: maskedKey,
+        KEY_LENGTH: GOOGLE_API_KEY.length,
+        IS_DEFAULT: GOOGLE_API_KEY === "default_key"
+      });
+
+      if (!GOOGLE_API_KEY || GOOGLE_API_KEY === "default_key") {
+        throw new Error("Google Maps API key is not configured properly");
+      }
+
+      const { origin, destination } = querySchema.parse(req.query);
+
+      // Direct API call using server-side key
+      const url = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.lat},${origin.lng}&destinations=${destination.lat},${destination.lng}&key=${GOOGLE_API_KEY}`;
+      console.log("Distance API URL:", url.replace(GOOGLE_API_KEY, 'HIDDEN'));
+
+      try {
+        const response = await axios.get(url);
+        console.log('Distance API Raw Response:', response.data);
+
+        if (response.data.status !== "OK") {
+          throw new Error(`Distance Matrix API error: ${response.data.status}`);
+        }
+
+        const distance = distanceResponseSchema.parse(response.data);
+        console.log('Parsed Distance Response:', distance);
+
+        // Additional validation of the response
+        const element = distance.rows[0]?.elements[0];
+        if (!element || element.status !== "OK" || !element.duration) {
+          throw new Error(element?.error_message || "Could not calculate travel time");
+        }
+
+        res.json(distance);
+      } catch (apiError: any) {
+        // Enhanced error logging
+        console.error("Distance API Error Details:", apiError);
+
+        if (apiError.response) {
+          console.error("Response Status:", apiError.response.status);
+          console.error("Response Data:", apiError.response.data);
+          console.error("Response Headers:", apiError.response.headers);
+
+          // Log additional error details if available
+          if (apiError.response.data?.error_message) {
+            console.error("Google Maps Error Message:", apiError.response.data.error_message);
+          }
+          if (apiError.response.data?.status) {
+            console.error("Google Maps Status:", apiError.response.data.status);
+          }
+
+          // Only use mock data for authentication errors
+          if (apiError.response.status === 401 || apiError.response.status === 403) {
+            console.warn("Authentication error. Using mock distance data.");
+            const mockDistance = generateMockDistanceData(origin, destination);
+            return res.json(mockDistance);
+          }
+
+          throw new Error(`Google Maps API error: ${apiError.response.status} - ${apiError.response.data?.error_message || "Unknown error"}`);
+        }
+
+        throw apiError;
+      }
+    } catch (error) {
+      console.error('Distance API Error:', error);
+      if (error instanceof z.ZodError) {
+        res.status(400).json({
+          error: "Invalid coordinates format",
+          details: error.errors.map(e => e.message)
+        });
+      } else if (error instanceof Error) {
+        res.status(400).json({ error: error.message });
+      } else {
+        res.status(400).json({ error: "Invalid request" });
+      }
+    }
+  });
+
   app.get("/api/weather", async (req, res) => {
     try {
       console.log("Weather API request params:", req.query);
@@ -243,122 +281,6 @@ export async function registerRoutes(app: Express) {
       console.error('Weather API Error:', error);
       if (error instanceof z.ZodError) {
         res.status(400).json({ error: "Invalid coordinates format" });
-      } else if (error instanceof Error) {
-        res.status(400).json({ error: error.message });
-      } else {
-        res.status(400).json({ error: "Invalid request" });
-      }
-    }
-  });
-
-  app.get("/api/distance", async (req, res) => {
-    try {
-      console.log("Distance API request params:", req.query);
-      const querySchema = z.object({
-        origin: z.object({
-          lat: z.string().transform(val => Number(val)),
-          lng: z.string().transform(val => Number(val))
-        }),
-        destination: z.object({
-          lat: z.string().transform(val => Number(val)),
-          lng: z.string().transform(val => Number(val))
-        })
-      });
-
-      // Enhanced logging of environment variables and API keys
-      console.log("Environment variables check:", {
-        HAS_GOOGLE_MAPS_API_KEY: !!process.env.GOOGLE_MAPS_API_KEY,
-        HAS_VITE_GOOGLE_MAPS_API_KEY: !!process.env.VITE_GOOGLE_MAPS_API_KEY,
-        FINAL_KEY_LENGTH: GOOGLE_API_KEY.length,
-        IS_DEFAULT_KEY: GOOGLE_API_KEY === "default_key",
-        HAS_SIGNING_SECRET: !!GOOGLE_MAPS_SIGNING_SECRET,
-        SIGNING_SECRET_LENGTH: GOOGLE_MAPS_SIGNING_SECRET?.length || 0
-      });
-
-      if (!GOOGLE_API_KEY || GOOGLE_API_KEY === "default_key") {
-        throw new Error("Google Maps API key is not configured properly");
-      }
-
-      const { origin, destination } = querySchema.parse(req.query);
-
-      const baseUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.lat},${origin.lng}&destinations=${destination.lat},${destination.lng}&key=${GOOGLE_API_KEY}`;
-
-      // Sign the URL if we have a signing secret
-      const url = signGoogleMapsUrl(baseUrl);
-      console.log("Final Distance API URL:", url.replace(GOOGLE_API_KEY, 'HIDDEN'));
-
-      try {
-        const response = await axios.get(url);
-        console.log('Distance API Raw Response:', response.data);
-
-        if (response.data.status !== "OK") {
-          throw new Error(`Distance Matrix API error: ${response.data.status}`);
-        }
-
-        const distance = distanceResponseSchema.parse(response.data);
-        console.log('Parsed Distance Response:', distance);
-
-        // Additional validation of the response
-        const element = distance.rows[0]?.elements[0];
-        if (!element || element.status !== "OK" || !element.duration) {
-          throw new Error(element?.error_message || "Could not calculate travel time");
-        }
-
-        res.json(distance);
-      } catch (apiError: any) {
-        // Enhanced error logging
-        console.error("Distance API Error Details:", apiError);
-
-        if (apiError.response) {
-          console.error("Response Status:", apiError.response.status);
-          console.error("Response Data:", apiError.response.data);
-          console.error("Response Headers:", apiError.response.headers);
-
-          // Log additional error details if available
-          if (apiError.response.data?.error_message) {
-            console.error("Google Maps Error Message:", apiError.response.data.error_message);
-          }
-          if (apiError.response.data?.status) {
-            console.error("Google Maps Status:", apiError.response.data.status);
-          }
-
-          // Full response logging for debugging
-          console.error("Full error response:", JSON.stringify(apiError.response.data, null, 2));
-
-          // Log API key info (masked)
-          const maskedKey = GOOGLE_API_KEY.substring(0, 4) + "..." + GOOGLE_API_KEY.substring(GOOGLE_API_KEY.length - 4);
-          console.error("API Key being used (masked):", maskedKey);
-          console.error("API Key length:", GOOGLE_API_KEY.length);
-          console.error("Request URL (sanitized):", url.replace(GOOGLE_API_KEY, "HIDDEN_KEY"));
-          console.error("Complete error details:", {
-            status: apiError.response.status,
-            statusText: apiError.response.statusText,
-            headers: apiError.response.headers,
-            data: apiError.response.data
-          });
-        }
-
-        // Use mock distance data as fallback
-        if (apiError.response && apiError.response.status) {
-          const status = apiError.response.status;
-          // Only fall back to mock data for authentication/authorization errors
-          if (status === 401 || status === 403) {
-            console.warn(`Google Maps API authentication error (${status}). Using mock distance data.`);
-            const mockDistance = generateMockDistanceData(origin, destination);
-            return res.json(mockDistance);
-          } else {
-            throw new Error(`Google Maps API error: ${status} - ${apiError.response.data?.error_message || "Unknown error"}`);
-          }
-        }
-        throw apiError;
-      }
-    } catch (error) {
-      console.error('Distance API Error:', error);
-      if (error instanceof z.ZodError) {
-        res.status(400).json({
-          error: "Invalid coordinates format",
-          details: error.errors.map(e => e.message)
-        });
       } else if (error instanceof Error) {
         res.status(400).json({ error: error.message });
       } else {
