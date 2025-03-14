@@ -132,9 +132,25 @@ function generateMockDistanceData(origin: {lat: number, lng: number}, destinatio
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
   const distance = R * c;
 
-  // Estimate travel time (assuming average 60 km/h or ~37 mph)
-  // This is a very rough estimate that doesn't account for roads or traffic
-  const travelTimeMinutes = Math.round(distance * 60 / 60);
+  // Apply route factor to account for non-straight roads
+  const routeFactor = 1.3;
+  const adjustedDistance = distance * routeFactor;
+
+  // Calculate travel time using more realistic average speed (100 km/h or ~62 mph)
+  // For short distances, we use a slower speed to account for city driving
+  let averageSpeed;
+  if (adjustedDistance < 5) {
+    // City driving for very short distances
+    averageSpeed = 30; // 30 km/h for short city trips
+  } else if (adjustedDistance < 20) {
+    // Mix of city and highway
+    averageSpeed = 60; // 60 km/h
+  } else {
+    // Primarily highway driving
+    averageSpeed = 100; // 100 km/h
+  }
+
+  const travelTimeMinutes = Math.round((adjustedDistance / averageSpeed) * 60);
 
   // Format the travel time in a human-readable format
   let travelTimeText = "";
