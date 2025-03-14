@@ -3,7 +3,7 @@ import { createServer } from "http";
 import axios from "axios";
 import { locationSchema, weatherResponseSchema, distanceResponseSchema } from "@shared/schema";
 import { z } from "zod";
-import CryptoJS from 'crypto-js'; // Changed from import * as CryptoJS
+import CryptoJS from 'crypto-js';
 
 const WEATHER_API_KEY = process.env.OPENWEATHERMAP_API_KEY || "default_key";
 const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "default_key";
@@ -385,6 +385,10 @@ export async function registerRoutes(app: Express) {
         throw new Error("Google Maps API key is not configured");
       }
 
+      // Log the API key length and first/last few characters (for debugging)
+      const maskedKey = GOOGLE_API_KEY.substring(0, 4) + "..." + GOOGLE_API_KEY.substring(GOOGLE_API_KEY.length - 4);
+      console.log(`Using Google Maps API key: ${maskedKey} (${GOOGLE_API_KEY.length} characters)`);
+
       const { origin, destination } = querySchema.parse(req.query);
 
       const baseUrl = `https://maps.googleapis.com/maps/api/distancematrix/json?origins=${origin.lat},${origin.lng}&destinations=${destination.lat},${destination.lng}&key=${GOOGLE_API_KEY}`;
@@ -419,6 +423,14 @@ export async function registerRoutes(app: Express) {
           console.error("Response Status:", apiError.response.status);
           console.error("Response Data:", apiError.response.data);
           console.error("Response Headers:", apiError.response.headers);
+
+          // Log additional error details if available
+          if (apiError.response.data?.error_message) {
+            console.error("Google Maps Error Message:", apiError.response.data.error_message);
+          }
+          if (apiError.response.data?.status) {
+            console.error("Google Maps Status:", apiError.response.data.status);
+          }
         }
 
         // Use mock distance data as fallback
