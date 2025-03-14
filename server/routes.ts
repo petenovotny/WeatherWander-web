@@ -21,27 +21,41 @@ function signGoogleMapsUrl(url: string): string {
   }
 
   try {
-    // Remove any existing signature and API key from the URL for signing
-    const urlWithoutKey = url.split('&key=')[0];
+    // Parse the URL to get path and query parameters
+    const urlObj = new URL(url);
 
-    // Create the URL signing component (the path + query, without protocol and host)
-    const urlToSign = new URL(urlWithoutKey);
-    const pathWithQuery = urlToSign.pathname + urlToSign.search;
+    // Remove any existing signature and API key
+    urlObj.searchParams.delete('signature');
+    urlObj.searchParams.delete('key');
 
-    // Decode the base64 signing key (the client secret)
+    // Create the canonical path + query string that needs to be signed
+    // This should be in the format: /path?param1=value1&param2=value2
+    const pathAndQuery = urlObj.pathname + '?' + urlObj.searchParams.toString();
+
+    console.log("Raw URL component to be signed:", pathAndQuery);
+
+    // URL decode the string before signing (as per Google's requirements)
+    const decodedPathAndQuery = decodeURIComponent(pathAndQuery);
+    console.log("Decoded URL component to be signed:", decodedPathAndQuery);
+
+    // Decode the base64 signing key
     const key = CryptoJS.enc.Base64.parse(GOOGLE_MAPS_SIGNING_SECRET);
 
     // Create the signature using HMAC-SHA1
-    const signature = CryptoJS.HmacSHA1(pathWithQuery, key);
-    const encodedSignature = signature.toString(CryptoJS.enc.Base64);
+    const signature = CryptoJS.HmacSHA1(decodedPathAndQuery, key);
 
-    // Replace any characters that cannot be included in a URL
-    const safeSignature = encodedSignature
+    // Convert the signature to a base64 string
+    const base64Signature = signature.toString(CryptoJS.enc.Base64);
+
+    // Make the signature safe for URLs
+    const safeSignature = base64Signature
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
-    // Add the signature and API key to the URL
+    console.log("Generated URL-safe signature:", safeSignature);
+
+    // Add the API key and signature back to the URL
     return `${url}&signature=${safeSignature}`;
   } catch (error) {
     console.error("Error signing Google Maps URL:", error);
@@ -385,9 +399,13 @@ export async function registerRoutes(app: Express) {
         throw new Error("Google Maps API key is not configured");
       }
 
-      // Log the API key length and first/last few characters (for debugging)
+      // Log API key and signing secret status (masked)
       const maskedKey = GOOGLE_API_KEY.substring(0, 4) + "..." + GOOGLE_API_KEY.substring(GOOGLE_API_KEY.length - 4);
       console.log(`Using Google Maps API key: ${maskedKey} (${GOOGLE_API_KEY.length} characters)`);
+      console.log("Signing secret configured:", !!GOOGLE_MAPS_SIGNING_SECRET);
+      if (GOOGLE_MAPS_SIGNING_SECRET) {
+        console.log("Signing secret length:", GOOGLE_MAPS_SIGNING_SECRET.length);
+      }
 
       const { origin, destination } = querySchema.parse(req.query);
 
@@ -395,7 +413,7 @@ export async function registerRoutes(app: Express) {
 
       // Sign the URL if we have a signing secret
       const url = signGoogleMapsUrl(baseUrl);
-      console.log("Calling Distance API:", url.replace(GOOGLE_API_KEY, 'HIDDEN'));
+      console.log("Final Distance API URL:", url.replace(GOOGLE_API_KEY, 'HIDDEN'));
 
       try {
         const response = await axios.get(url);
@@ -431,6 +449,9 @@ export async function registerRoutes(app: Express) {
           if (apiError.response.data?.status) {
             console.error("Google Maps Status:", apiError.response.data.status);
           }
+
+          // Full response logging for debugging
+          console.error("Full error response:", JSON.stringify(apiError.response.data, null, 2));
         }
 
         // Use mock distance data as fallback
