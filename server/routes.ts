@@ -6,6 +6,7 @@ import { z } from "zod";
 import CryptoJS from 'crypto-js';
 
 const WEATHER_API_KEY = process.env.OPENWEATHERMAP_API_KEY || "default_key";
+// Use the backend-specific API key, NOT the VITE_ version
 const GOOGLE_API_KEY = process.env.GOOGLE_MAPS_API_KEY || "default_key";
 const GOOGLE_MAPS_SIGNING_SECRET = process.env.GOOGLE_MAPS_SIGNING_SECRET || "";
 
@@ -28,170 +29,39 @@ function signGoogleMapsUrl(url: string): string {
     urlObj.searchParams.delete('signature');
     urlObj.searchParams.delete('key');
 
-    // Create the canonical path + query string that needs to be signed
-    // This should be in the format: /path?param1=value1&param2=value2
-    const pathAndQuery = urlObj.pathname + '?' + urlObj.searchParams.toString();
+    // Sort parameters alphabetically and reconstruct the query string
+    const sortedParams = Array.from(urlObj.searchParams.entries())
+      .sort(([a], [b]) => a.localeCompare(b));
+    urlObj.search = new URLSearchParams(sortedParams).toString();
 
-    console.log("Raw URL component to be signed:", pathAndQuery);
+    // Create the canonical string to sign: path?params
+    const stringToSign = urlObj.pathname + '?' + urlObj.search;
 
-    // URL decode the string before signing (as per Google's requirements)
-    const decodedPathAndQuery = decodeURIComponent(pathAndQuery);
-    console.log("Decoded URL component to be signed:", decodedPathAndQuery);
+    console.log("String to be signed:", stringToSign);
 
     // Decode the base64 signing key
     const key = CryptoJS.enc.Base64.parse(GOOGLE_MAPS_SIGNING_SECRET);
 
-    // Create the signature using HMAC-SHA1
-    const signature = CryptoJS.HmacSHA1(decodedPathAndQuery, key);
+    // Create HMAC-SHA1 signature
+    const signature = CryptoJS.HmacSHA1(stringToSign, key);
 
-    // Convert the signature to a base64 string
-    const base64Signature = signature.toString(CryptoJS.enc.Base64);
-
-    // Make the signature safe for URLs
-    const safeSignature = base64Signature
+    // Convert to base64 and make URL-safe
+    const base64Signature = signature.toString(CryptoJS.enc.Base64)
       .replace(/\+/g, '-')
       .replace(/\//g, '_')
       .replace(/=+$/, '');
 
-    console.log("Generated URL-safe signature:", safeSignature);
+    console.log("Generated URL-safe signature:", base64Signature);
 
-    // Add the API key and signature back to the URL
-    return `${url}&signature=${safeSignature}`;
+    // Add API key and signature to the URL
+    urlObj.searchParams.append('key', GOOGLE_API_KEY);
+    urlObj.searchParams.append('signature', base64Signature);
+
+    return urlObj.toString();
   } catch (error) {
     console.error("Error signing Google Maps URL:", error);
     return url; // Return the original URL if signing fails
   }
-}
-
-/**
- * Generate mock weather data for development and testing
- * Used as fallback when API key is invalid or unavailable
- */
-function generateMockWeatherData(lat: number, lng: number): any {
-  // Generate deterministic but varying temperature based on coordinates
-  const baseTemp = 20; // Base temperature in Celsius
-  const tempVariation = (Math.sin(lat * lng * 0.01) * 10).toFixed(1);
-  const currentTemp = parseFloat((baseTemp + parseFloat(tempVariation)).toFixed(1));
-
-  // Generate mock weather conditions based on temperature
-  let condition = "clear";
-  let icon = "01d";
-
-  if (currentTemp < 15) {
-    condition = "clouds";
-    icon = "03d";
-  } else if (currentTemp > 25) {
-    condition = "clear";
-    icon = "01d";
-  } else {
-    condition = "few clouds";
-    icon = "02d";
-  }
-
-  // Generate truly different daily forecasts with proper highs and lows
-  const dailyForecasts = Array(4).fill(0).map((_, index) => {
-    // Base temperature increases slightly each day (climate warming simulation)
-    const dayVariation = index * 0.5;
-
-    // Generate a range of temperatures throughout the day
-    // For a proper forecast, we'd analyze hourly data for each day
-    const dayHigh = currentTemp + 3 + dayVariation + (Math.random() * 2);
-    const dayLow = currentTemp - 5 + dayVariation - (Math.random() * 2);
-
-    return {
-      temp: {
-        min: parseFloat(dayLow.toFixed(1)),
-        max: parseFloat(dayHigh.toFixed(1))
-      },
-      weather: [
-        {
-          icon: icon,
-          description: condition
-        }
-      ]
-    };
-  });
-
-  return {
-    current: {
-      temp: currentTemp,
-      weather: [
-        {
-          icon: icon,
-          description: condition
-        }
-      ]
-    },
-    daily: dailyForecasts,
-    isMockData: true
-  };
-}
-
-/**
- * Generate mock distance data based on actual coordinates
- * This creates a more realistic travel time estimate based on the distance between points
- * @param origin Starting coordinates
- * @param destination Ending coordinates 
- * @returns Mock distance response with simulated travel time
- */
-function generateMockDistanceData(origin: {lat: number, lng: number}, destination: {lat: number, lng: number}): any {
-  // Calculate great-circle distance between points (Haversine formula)
-  const R = 6371; // Earth's radius in kilometers
-  const dLat = (destination.lat - origin.lat) * (Math.PI / 180);
-  const dLng = (destination.lng - origin.lng) * (Math.PI / 180);
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
-    Math.cos(origin.lat * (Math.PI / 180)) * Math.cos(destination.lat * (Math.PI / 180)) * 
-    Math.sin(dLng/2) * Math.sin(dLng/2);
-  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-  const distance = R * c;
-
-  // Apply route factor to account for non-straight roads
-  const routeFactor = 1.3;
-  const adjustedDistance = distance * routeFactor;
-
-  // Calculate travel time using more realistic average speed (100 km/h or ~62 mph)
-  // For short distances, we use a slower speed to account for city driving
-  let averageSpeed;
-  if (adjustedDistance < 5) {
-    // City driving for very short distances
-    averageSpeed = 30; // 30 km/h for short city trips
-  } else if (adjustedDistance < 20) {
-    // Mix of city and highway
-    averageSpeed = 60; // 60 km/h
-  } else {
-    // Primarily highway driving
-    averageSpeed = 100; // 100 km/h
-  }
-
-  const travelTimeMinutes = Math.round((adjustedDistance / averageSpeed) * 60);
-
-  // Format the travel time in a human-readable format
-  let travelTimeText = "";
-  if (travelTimeMinutes < 60) {
-    travelTimeText = `${travelTimeMinutes} mins`;
-  } else {
-    const hours = Math.floor(travelTimeMinutes / 60);
-    const mins = travelTimeMinutes % 60;
-    if (mins === 0) {
-      travelTimeText = `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
-    } else {
-      travelTimeText = `${hours} ${hours === 1 ? 'hour' : 'hours'} ${mins} mins`;
-    }
-  }
-
-  return {
-    rows: [{
-      elements: [{
-        status: "OK",
-        duration: {
-          text: travelTimeText,
-          value: travelTimeMinutes * 60 // seconds
-        }
-      }]
-    }],
-    isMockData: true
-  };
 }
 
 export async function registerRoutes(app: Express) {
@@ -395,16 +265,18 @@ export async function registerRoutes(app: Express) {
         })
       });
 
-      if (!GOOGLE_API_KEY || GOOGLE_API_KEY === "default_key") {
-        throw new Error("Google Maps API key is not configured");
-      }
+      // Enhanced logging of environment variables and API keys
+      console.log("Environment variables check:", {
+        HAS_GOOGLE_MAPS_API_KEY: !!process.env.GOOGLE_MAPS_API_KEY,
+        HAS_VITE_GOOGLE_MAPS_API_KEY: !!process.env.VITE_GOOGLE_MAPS_API_KEY,
+        FINAL_KEY_LENGTH: GOOGLE_API_KEY.length,
+        IS_DEFAULT_KEY: GOOGLE_API_KEY === "default_key",
+        HAS_SIGNING_SECRET: !!GOOGLE_MAPS_SIGNING_SECRET,
+        SIGNING_SECRET_LENGTH: GOOGLE_MAPS_SIGNING_SECRET?.length || 0
+      });
 
-      // Log API key and signing secret status (masked)
-      const maskedKey = GOOGLE_API_KEY.substring(0, 4) + "..." + GOOGLE_API_KEY.substring(GOOGLE_API_KEY.length - 4);
-      console.log(`Using Google Maps API key: ${maskedKey} (${GOOGLE_API_KEY.length} characters)`);
-      console.log("Signing secret configured:", !!GOOGLE_MAPS_SIGNING_SECRET);
-      if (GOOGLE_MAPS_SIGNING_SECRET) {
-        console.log("Signing secret length:", GOOGLE_MAPS_SIGNING_SECRET.length);
+      if (!GOOGLE_API_KEY || GOOGLE_API_KEY === "default_key") {
+        throw new Error("Google Maps API key is not configured properly");
       }
 
       const { origin, destination } = querySchema.parse(req.query);
@@ -452,14 +324,26 @@ export async function registerRoutes(app: Express) {
 
           // Full response logging for debugging
           console.error("Full error response:", JSON.stringify(apiError.response.data, null, 2));
+
+          // Log API key info (masked)
+          const maskedKey = GOOGLE_API_KEY.substring(0, 4) + "..." + GOOGLE_API_KEY.substring(GOOGLE_API_KEY.length - 4);
+          console.error("API Key being used (masked):", maskedKey);
+          console.error("API Key length:", GOOGLE_API_KEY.length);
+          console.error("Request URL (sanitized):", url.replace(GOOGLE_API_KEY, "HIDDEN_KEY"));
+          console.error("Complete error details:", {
+            status: apiError.response.status,
+            statusText: apiError.response.statusText,
+            headers: apiError.response.headers,
+            data: apiError.response.data
+          });
         }
 
         // Use mock distance data as fallback
         if (apiError.response && apiError.response.status) {
           const status = apiError.response.status;
+          // Only fall back to mock data for authentication/authorization errors
           if (status === 401 || status === 403) {
-            // For API key issues, return mock data instead of failing
-            console.log("Google Maps API key issue detected. Using mock distance data.");
+            console.warn(`Google Maps API authentication error (${status}). Using mock distance data.`);
             const mockDistance = generateMockDistanceData(origin, destination);
             return res.json(mockDistance);
           } else {
@@ -471,7 +355,7 @@ export async function registerRoutes(app: Express) {
     } catch (error) {
       console.error('Distance API Error:', error);
       if (error instanceof z.ZodError) {
-        res.status(400).json({ 
+        res.status(400).json({
           error: "Invalid coordinates format",
           details: error.errors.map(e => e.message)
         });
@@ -484,4 +368,131 @@ export async function registerRoutes(app: Express) {
   });
 
   return createServer(app);
+}
+
+function generateMockWeatherData(lat: number, lng: number): any {
+  // Generate deterministic but varying temperature based on coordinates
+  const baseTemp = 20; // Base temperature in Celsius
+  const tempVariation = (Math.sin(lat * lng * 0.01) * 10).toFixed(1);
+  const currentTemp = parseFloat((baseTemp + parseFloat(tempVariation)).toFixed(1));
+
+  // Generate mock weather conditions based on temperature
+  let condition = "clear";
+  let icon = "01d";
+
+  if (currentTemp < 15) {
+    condition = "clouds";
+    icon = "03d";
+  } else if (currentTemp > 25) {
+    condition = "clear";
+    icon = "01d";
+  } else {
+    condition = "few clouds";
+    icon = "02d";
+  }
+
+  // Generate truly different daily forecasts with proper highs and lows
+  const dailyForecasts = Array(4).fill(0).map((_, index) => {
+    // Base temperature increases slightly each day (climate warming simulation)
+    const dayVariation = index * 0.5;
+
+    // Generate a range of temperatures throughout the day
+    // For a proper forecast, we'd analyze hourly data for each day
+    const dayHigh = currentTemp + 3 + dayVariation + (Math.random() * 2);
+    const dayLow = currentTemp - 5 + dayVariation - (Math.random() * 2);
+
+    return {
+      temp: {
+        min: parseFloat(dayLow.toFixed(1)),
+        max: parseFloat(dayHigh.toFixed(1))
+      },
+      weather: [
+        {
+          icon: icon,
+          description: condition
+        }
+      ]
+    };
+  });
+
+  return {
+    current: {
+      temp: currentTemp,
+      weather: [
+        {
+          icon: icon,
+          description: condition
+        }
+      ]
+    },
+    daily: dailyForecasts,
+    isMockData: true
+  };
+}
+
+/**
+ * Generate mock distance data based on actual coordinates
+ * This creates a more realistic travel time estimate based on the distance between points
+ * @param origin Starting coordinates
+ * @param destination Ending coordinates 
+ * @returns Mock distance response with simulated travel time
+ */
+function generateMockDistanceData(origin: {lat: number, lng: number}, destination: {lat: number, lng: number}): any {
+  // Calculate great-circle distance between points (Haversine formula)
+  const R = 6371; // Earth's radius in kilometers
+  const dLat = (destination.lat - origin.lat) * (Math.PI / 180);
+  const dLng = (destination.lng - origin.lng) * (Math.PI / 180);
+  const a =
+    Math.sin(dLat/2) * Math.sin(dLat/2) +
+    Math.cos(origin.lat * (Math.PI / 180)) * Math.cos(destination.lat * (Math.PI / 180)) *
+    Math.sin(dLng/2) * Math.sin(dLng/2);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const distance = R * c;
+
+  // Apply route factor to account for non-straight roads
+  const routeFactor = 1.3;
+  const adjustedDistance = distance * routeFactor;
+
+  // Calculate travel time using more realistic average speed (100 km/h or ~62 mph)
+  // For short distances, we use a slower speed to account for city driving
+  let averageSpeed;
+  if (adjustedDistance < 5) {
+    // City driving for very short distances
+    averageSpeed = 30; // 30 km/h for short city trips
+  } else if (adjustedDistance < 20) {
+    // Mix of city and highway
+    averageSpeed = 60; // 60 km/h
+  } else {
+    // Primarily highway driving
+    averageSpeed = 100; // 100 km/h
+  }
+
+  const travelTimeMinutes = Math.round((adjustedDistance / averageSpeed) * 60);
+
+  // Format the travel time in a human-readable format
+  let travelTimeText = "";
+  if (travelTimeMinutes < 60) {
+    travelTimeText = `${travelTimeMinutes} mins`;
+  } else {
+    const hours = Math.floor(travelTimeMinutes / 60);
+    const mins = travelTimeMinutes % 60;
+    if (mins === 0) {
+      travelTimeText = `${hours} ${hours === 1 ? 'hour' : 'hours'}`;
+    } else {
+      travelTimeText = `${hours} ${hours === 1 ? 'hour' : 'hours'} ${mins} mins`;
+    }
+  }
+
+  return {
+    rows: [{
+      elements: [{
+        status: "OK",
+        duration: {
+          text: travelTimeText,
+          value: travelTimeMinutes * 60 // seconds
+        }
+      }]
+    }],
+    isMockData: true
+  };
 }
