@@ -1,0 +1,3 @@
+weatherroam.com {
+    reverse_proxy weatherwander:5000
+}

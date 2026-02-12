@@ -4,11 +4,29 @@ services:
       context: .
       args:
         VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
-    ports:
-      - "3001:5000"
+    expose:
+      - "5000"
     environment:
       - NODE_ENV=production
       - OPENWEATHERMAP_API_KEY=${OPENWEATHERMAP_API_KEY}
       - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
       - GOOGLE_MAPS_SIGNING_SECRET=${GOOGLE_MAPS_SIGNING_SECRET}
     restart: unless-stopped
+
+  caddy:
+    image: caddy:2-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+      - caddy_config:/config
+    depends_on:
+      - weatherwander
+    restart: unless-stopped
+
+volumes:
+  caddy_data:
+  caddy_config:
