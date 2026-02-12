@@ -1,18 +1,25 @@
-# Use a lightweight Node image
-FROM node:18-alpine
+FROM node:20-alpine AS builder
 
-# Set the working directory
 WORKDIR /app
 
-# Copy package files and install dependencies
 COPY package*.json ./
-RUN npm install
+RUN npm ci
 
-# Copy the rest of your app code
 COPY . .
 
-# Expose the port your app runs on (Replit usually uses 3000 or 8080)
-EXPOSE 3000
+ARG VITE_GOOGLE_MAPS_API_KEY
+ENV VITE_GOOGLE_MAPS_API_KEY=$VITE_GOOGLE_MAPS_API_KEY
 
-# Start the app
+RUN npm run build
+
+FROM node:20-alpine
+
+WORKDIR /app
+
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/package*.json ./
+RUN npm ci --omit=dev
+
+EXPOSE 5000
+
 CMD ["npm", "start"]

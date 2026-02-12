@@ -1,0 +1,14 @@
+services:
+  weatherwander:
+    build:
+      context: .
+      args:
+        VITE_GOOGLE_MAPS_API_KEY: ${VITE_GOOGLE_MAPS_API_KEY}
+    ports:
+      - "3001:5000"
+    environment:
+      - NODE_ENV=production
+      - OPENWEATHERMAP_API_KEY=${OPENWEATHERMAP_API_KEY}
+      - GOOGLE_MAPS_API_KEY=${GOOGLE_MAPS_API_KEY}
+      - GOOGLE_MAPS_SIGNING_SECRET=${GOOGLE_MAPS_SIGNING_SECRET}
+    restart: unless-stopped
