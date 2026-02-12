@@ -1,8 +1,24 @@
 import express, { type Request, Response, NextFunction } from "express";
+import cors from "cors";
+import rateLimit from "express-rate-limit";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 
 const app = express();
+
+// CORS — allow requests from web and mobile apps
+app.use(cors({ origin: true, methods: ["GET"] }));
+
+// Rate limiting for API endpoints (100 requests per 15 minutes per IP)
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { error: "Too many requests, please try again later." },
+});
+app.use("/api/", apiLimiter);
+
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 
