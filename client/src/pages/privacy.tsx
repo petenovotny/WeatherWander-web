@@ -121,10 +121,10 @@ export default function Privacy() {
               If you have questions about this privacy policy, please contact us
               at{" "}
               <a
-                href="mailto:privacy@weatherroam.com"
+                href="mailto:support@weatherroam.com"
                 className="text-amber-600 hover:text-amber-700 underline"
               >
-                privacy@weatherroam.com
+                support@weatherroam.com
               </a>
               .
             </p>
