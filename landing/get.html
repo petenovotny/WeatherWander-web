@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Get WeatherRoam</title>
+  <meta property="og:title" content="WeatherRoam — Travel Weather at a Glance" />
+  <meta property="og:description" content="Tap anywhere on the map to see the forecast and how long it takes to get there." />
+  <meta property="og:type" content="website" />
+  <meta property="og:url" content="https://weatherroam.com/get" />
+  <meta name="description" content="Tap anywhere on the map to see the forecast and how long it takes to get there." />
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #1a1a2e;
+      color: #fff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      text-align: center;
+      padding: 2rem;
+      max-width: 480px;
+    }
+    .icon {
+      width: 96px;
+      height: 96px;
+      background: #F59E0B;
+      border-radius: 22px;
+      margin: 0 auto 1.5rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 48px;
+    }
+    h1 {
+      font-size: 2rem;
+      font-weight: 700;
+      margin-bottom: 0.5rem;
+    }
+    .tagline {
+      font-size: 1.1rem;
+      color: #a0a0b8;
+      margin-bottom: 2rem;
+      line-height: 1.5;
+    }
+    .badges {
+      display: flex;
+      gap: 1rem;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: #fff;
+      color: #1a1a2e;
+      text-decoration: none;
+      padding: 0.75rem 1.5rem;
+      border-radius: 12px;
+      font-weight: 600;
+      font-size: 0.95rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .badge:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 20px rgba(245, 158, 11, 0.3);
+    }
+    .badge svg { width: 24px; height: 24px; flex-shrink: 0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="icon">🌤</div>
+    <h1>WeatherRoam</h1>
+    <p class="tagline">See the weather anywhere. Plan trips at a glance.</p>
+    <div class="badges">
+      <a href="https://apps.apple.com/app/weatherroam/id6759295188" class="badge">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.8-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M13 3.5c.73-.83 1.94-1.46 2.94-1.5.13 1.17-.34 2.35-1.04 3.19-.69.85-1.83 1.51-2.95 1.42-.15-1.15.41-2.35 1.05-3.11z"/></svg>
+        App Store
+      </a>
+      <a href="https://play.google.com/store/apps/details?id=com.weatherroam.app" class="badge">
+        <svg viewBox="0 0 24 24" fill="currentColor"><path d="M3.18 23.79c-.36-.17-.59-.52-.59-.93V1.14c0-.41.23-.76.59-.93L14.47 12 3.18 23.79zM15.72 13.25l3.34 1.94-2.38 2.38-3.34-1.94 2.38-2.38zm4.67-2.72L18.45 9.5l-2.73 2.5 2.73 2.5 1.94-1.03c.56-.32.56-1.12 0-1.44zM15.72 10.75l-3.34-1.94-2.38 2.38 3.34 1.94 2.38-2.38zM4.89 1.62l9.58 5.56-2.38 2.38L4.89 1.62z"/></svg>
+        Google Play
+      </a>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,3 +1,26 @@
 weatherroam.com {
+    # Smart app store redirect: weatherroam.com/get
+    @ios_get {
+        path /get
+        header_regexp User-Agent (?i)(iPhone|iPad|iPod)
+    }
+    redir @ios_get https://apps.apple.com/app/weatherroam/id6759295188 temporary
+
+    @android_get {
+        path /get
+        header_regexp User-Agent (?i)Android
+    }
+    redir @android_get https://play.google.com/store/apps/details?id=com.weatherroam.app temporary
+
+    # Desktop/unknown UA fallback — serve static landing page
+    @desktop_get {
+        path /get
+    }
+    handle @desktop_get {
+        root * /srv/landing
+        rewrite * /get.html
+        file_server
+    }
+
     reverse_proxy weatherwander:5000
 }
