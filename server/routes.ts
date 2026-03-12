@@ -289,6 +289,95 @@ export async function registerRoutes(app: Express) {
     }
   });
 
+  // ── NWS Weather Alerts ────────────────────────────────────────────────
+  // In-memory cache: zone lookups (lat,lng → zoneId) and alert responses.
+  const zoneCache = new Map<string, { zoneId: string; ts: number }>();
+  const alertCache = new Map<string, { alerts: any[]; ts: number }>();
+  const ZONE_TTL = 24 * 60 * 60 * 1000; // 24 hours — zones rarely change
+  const ALERT_TTL = 3 * 60 * 1000;      // 3 minutes
+
+  const NWS_USER_AGENT = "WeatherRoam/1.0 (weatherroam.com)";
+
+  app.get("/api/alerts", async (req, res) => {
+    try {
+      const { lat, lng } = locationSchema.parse({
+        lat: Number(req.query.lat),
+        lng: Number(req.query.lng),
+      });
+
+      // Round coordinates to 4 decimal places for cache key (~11 m precision)
+      const cacheKey = `${lat.toFixed(4)},${lng.toFixed(4)}`;
+
+      // ── Check alert cache first ──────────────────────────────────────
+      const cachedAlerts = alertCache.get(cacheKey);
+      if (cachedAlerts && Date.now() - cachedAlerts.ts < ALERT_TTL) {
+        return res.json({ alerts: cachedAlerts.alerts });
+      }
+
+      // ── Resolve forecast zone ────────────────────────────────────────
+      let zoneId: string;
+      const cachedZone = zoneCache.get(cacheKey);
+      if (cachedZone && Date.now() - cachedZone.ts < ZONE_TTL) {
+        zoneId = cachedZone.zoneId;
+      } else {
+        const pointsUrl = `https://api.weather.gov/points/${lat},${lng}`;
+        const pointsRes = await axios.get(pointsUrl, {
+          headers: { "User-Agent": NWS_USER_AGENT, Accept: "application/geo+json" },
+          timeout: 8000,
+        });
+
+        const forecastZoneUrl: string | undefined =
+          pointsRes.data?.properties?.forecastZone;
+        if (!forecastZoneUrl) {
+          console.warn("NWS points response missing forecastZone", { lat, lng });
+          return res.json({ alerts: [] });
+        }
+
+        // Extract zone ID from URL like "https://api.weather.gov/zones/forecast/MNZ060"
+        zoneId = forecastZoneUrl.split("/").pop() || "";
+        if (!zoneId) {
+          console.warn("Could not extract zone ID from forecastZone URL", { forecastZoneUrl });
+          return res.json({ alerts: [] });
+        }
+
+        zoneCache.set(cacheKey, { zoneId, ts: Date.now() });
+      }
+
+      // ── Fetch active alerts for zone ─────────────────────────────────
+      const alertsUrl = `https://api.weather.gov/alerts/active?zone=${zoneId}`;
+      const alertsRes = await axios.get(alertsUrl, {
+        headers: { "User-Agent": NWS_USER_AGENT, Accept: "application/geo+json" },
+        timeout: 8000,
+      });
+
+      const features: any[] = alertsRes.data?.features ?? [];
+
+      const alerts = features.map((f: any) => {
+        const p = f.properties ?? {};
+        return {
+          event: p.event ?? "Weather Alert",
+          severity: (p.severity ?? "unknown").toLowerCase(),
+          certainty: (p.certainty ?? "").toLowerCase() || undefined,
+          urgency: (p.urgency ?? "").toLowerCase() || undefined,
+          onset: p.onset ?? undefined,
+          expires: p.expires ?? p.ends ?? undefined,
+          headline: p.headline ?? undefined,
+          description: p.description ?? undefined,
+          instruction: p.instruction ?? undefined,
+        };
+      });
+
+      // Cache the result
+      alertCache.set(cacheKey, { alerts, ts: Date.now() });
+
+      res.json({ alerts });
+    } catch (error: any) {
+      // Log but don't fail — graceful degradation matches mobile client expectation
+      console.error("Alerts API error:", error?.message ?? error);
+      res.json({ alerts: [] });
+    }
+  });
+
   return createServer(app);
 }
 
